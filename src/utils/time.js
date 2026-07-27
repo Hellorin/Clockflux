@@ -55,7 +55,7 @@ export function decimalToHoursMinutes(decimalHours) {
  * Formats milliseconds as HH:MM:SS for the live timer.
  */
 export function formatDuration(ms) {
-  const totalSeconds = Math.floor(ms / 1000)
+  const totalSeconds = Math.floor(Math.max(0, ms) / 1000)
   const h = Math.floor(totalSeconds / 3600)
   const m = Math.floor((totalSeconds % 3600) / 60)
   const s = totalSeconds % 60
