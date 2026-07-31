@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
-import { computeAccruedDays, formatHolidayDays } from '../utils/holidays'
+import { formatHolidayDays } from '../utils/holidays'
 import { dayOffBaseType, dayOffFraction } from '../utils/dayOff'
+import { getAccruedDays } from '../services/ptoService'
 import type { DaysOffMap, HolidayAccrualMode } from '../types'
 
 interface HolidayChartProps {
@@ -39,7 +40,7 @@ export default function HolidayChart({ daysOff, allowance, startDate, accrualMod
       const i = startMonth + idx
       const monthEnd = new Date(year, i + 1, 0)
       const monthEndKey = `${year}-${String(i + 1).padStart(2, '0')}-${String(monthEnd.getDate()).padStart(2, '0')}`
-      const earned = computeAccruedDays(startDate, allowance, monthEnd, accrualMode)
+      const earned = getAccruedDays(startDate, allowance, monthEnd, accrualMode)
       const used = Object.entries(daysOff).reduce((n, [k, v]) => {
         if (dayOffBaseType(v) !== 'personal' || !k.startsWith(`${year}-`)) return n
         return k <= monthEndKey ? n + dayOffFraction(v) : n

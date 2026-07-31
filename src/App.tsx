@@ -11,7 +11,7 @@ import CelebrationOverlay from './components/CelebrationOverlay'
 import HealthPage from './components/HealthPage'
 import HolidayPage from './components/HolidayPage'
 import { formatDateKey } from './utils/time'
-import { loadHoursFormat, saveHoursFormat } from './services/preferencesRepository'
+import * as preferencesService from './services/preferencesService'
 import type { Milestone } from './hooks/useTimeTracker'
 import type { HoursFormat, Session } from './types'
 
@@ -27,7 +27,7 @@ export default function App() {
   const { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode } = useAppSettings()
   const [view, setView] = useState<View>('tracker')
   const [selectedDay, setSelectedDay] = useState<SelectedDay | null>(null)
-  const [hoursFormat, setHoursFormat] = useState<HoursFormat>(() => (loadHoursFormat() as HoursFormat) || 'decimal')
+  const [hoursFormat, setHoursFormat] = useState<HoursFormat>(() => (preferencesService.loadHoursFormat() as HoursFormat) || 'decimal')
   const [celebrationMilestone, setCelebrationMilestone] = useState<Milestone | null>(null)
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export default function App() {
   function toggleHoursFormat() {
     const next = hoursFormat === 'decimal' ? 'hhmm' : 'decimal'
     setHoursFormat(next)
-    saveHoursFormat(next)
+    preferencesService.saveHoursFormat(next)
   }
 
   return (

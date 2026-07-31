@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { loadSettingsRaw, saveSettings } from '../services/settingsRepository'
+import * as settingsService from '../services/settingsService'
 import type { HolidayAccrualMode, Settings } from '../types'
 
 const DEFAULTS: Settings = {
@@ -9,7 +9,7 @@ const DEFAULTS: Settings = {
 }
 
 function loadSettings(): Settings {
-  const parsed = loadSettingsRaw() ?? {}
+  const parsed = settingsService.loadSettingsRaw() ?? {}
   return { ...DEFAULTS, ...parsed }
 }
 
@@ -20,7 +20,7 @@ export function useAppSettings() {
     const n = Math.max(0, Math.floor(Number(value) || 0))
     setSettings(prev => {
       const next = { ...prev, annualHolidayAllowance: n }
-      saveSettings(next)
+      settingsService.saveSettings(next)
       return next
     })
   }, [])
@@ -29,7 +29,7 @@ export function useAppSettings() {
     const v = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null
     setSettings(prev => {
       const next = { ...prev, employmentStartDate: v }
-      saveSettings(next)
+      settingsService.saveSettings(next)
       return next
     })
   }, [])
@@ -38,7 +38,7 @@ export function useAppSettings() {
     const v: HolidayAccrualMode = value === 'immediate' ? 'immediate' : 'gradual'
     setSettings(prev => {
       const next = { ...prev, holidayAccrualMode: v }
-      saveSettings(next)
+      settingsService.saveSettings(next)
       return next
     })
   }, [])

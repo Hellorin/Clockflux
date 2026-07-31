@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { computeRecentWeeklyAvg } from '../utils/stats'
+import { getRecentWeeklyAvg } from '../services/statsService'
 import type { RecentWeeklyAvgStatus, WeeklyTotal } from '../utils/stats'
 import { decimalToHoursMinutes } from '../utils/time'
 import { formatHolidayDays } from '../utils/holidays'
@@ -46,7 +46,7 @@ const STATUS_CONFIG: Record<RecentWeeklyAvgStatus, { icon: string, message: stri
 export default function HealthPage({ stats, allDays, daysOff, employmentStartDate }: HealthPageProps) {
   const healthData = useMemo(() => {
     const days = Object.fromEntries(allDays.map(d => [d.date, d.sessions]))
-    return computeRecentWeeklyAvg(days, daysOff)
+    return getRecentWeeklyAvg(days, daysOff)
   }, [allDays, daysOff])
 
   const lastOvertimeDate = useMemo(() => {

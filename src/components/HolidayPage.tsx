@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { getTodayKey } from '../utils/time'
-import { computeProratedAllowance, computeAccruedDays, formatHolidayDays } from '../utils/holidays'
+import { formatHolidayDays } from '../utils/holidays'
 import { dayOffBaseType, dayOffFraction } from '../utils/dayOff'
+import { getProratedAllowance, getAccruedDays } from '../services/ptoService'
 import HolidayChart from './HolidayChart'
 import type { DaysOffMap, HolidayAccrualMode } from '../types'
 
@@ -39,8 +40,8 @@ function HolidayBalanceCard({ used, daysOff, allowance, onAllowanceChange, start
   const year = today.getFullYear()
   const todayKey = getTodayKey()
 
-  const proratedAllowance = computeProratedAllowance(startDate, allowance, year)
-  const accrued = computeAccruedDays(startDate, allowance, today, accrualMode)
+  const proratedAllowance = getProratedAllowance(startDate, allowance, year)
+  const accrued = getAccruedDays(startDate, allowance, today, accrualMode)
   const isProrated = startDate && proratedAllowance !== allowance
   const available = accrued - used
   const overspent = available < 0
