@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
+import { loadSettingsRaw, saveSettings } from '../services/settingsRepository'
 
-const STORAGE_KEY = 'timeforgeSettings'
 const DEFAULTS = {
   annualHolidayAllowance: 25,
   employmentStartDate: null,
@@ -8,17 +8,8 @@ const DEFAULTS = {
 }
 
 function loadSettings() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    const parsed = raw ? JSON.parse(raw) : {}
-    return { ...DEFAULTS, ...parsed }
-  } catch {
-    return { ...DEFAULTS }
-  }
-}
-
-function saveSettings(settings) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+  const parsed = loadSettingsRaw() ?? {}
+  return { ...DEFAULTS, ...parsed }
 }
 
 export function useAppSettings() {

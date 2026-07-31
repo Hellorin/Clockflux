@@ -11,13 +11,14 @@ import CelebrationOverlay from './components/CelebrationOverlay'
 import HealthPage from './components/HealthPage'
 import HolidayPage from './components/HolidayPage'
 import { formatDateKey } from './utils/time'
+import { loadHoursFormat, saveHoursFormat } from './services/preferencesRepository'
 
 export default function App() {
   const { isCheckedIn, checkIn, checkOut, todaySessions, todayKey, allDays, setDaySessions, daysOff, setDayOffType, setDaysOffTypeBulk, isTodayOff, todayTargetMs, personalDaysUsedThisYear, setMilestoneCallback, weekTargetMs, weekTotalOtherDaysMs, allPastWorkdayOvertimeMs, stats } = useTimeTracker()
   const { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode } = useAppSettings()
   const [view, setView] = useState('tracker')
   const [selectedDay, setSelectedDay] = useState(null)
-  const [hoursFormat, setHoursFormat] = useState(() => localStorage.getItem('hoursFormat') || 'decimal')
+  const [hoursFormat, setHoursFormat] = useState(() => loadHoursFormat() || 'decimal')
   const [celebrationMilestone, setCelebrationMilestone] = useState(null)
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export default function App() {
   function toggleHoursFormat() {
     const next = hoursFormat === 'decimal' ? 'hhmm' : 'decimal'
     setHoursFormat(next)
-    localStorage.setItem('hoursFormat', next)
+    saveHoursFormat(next)
   }
 
   return (

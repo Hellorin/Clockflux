@@ -2,12 +2,12 @@ import { useState, useCallback, useMemo, useRef } from 'react'
 import { getTodayKey, sumSessionsMs, toDecimalHours, isWeekend, getWeekDays, computeWeekProgress } from '../utils/time'
 import { computeGlobalStats } from '../utils/stats'
 import { dayOffFraction, dayOffBaseType, isValidDayOffType } from '../utils/dayOff'
+import { loadTimeEntries, saveTimeEntries } from '../services/timeEntriesRepository'
 
 function toKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
-const STORAGE_KEY = 'timeforge'
 const AUTO_CHECKOUT_HOUR = 21
 
 // Auto close any open session whose check-in was on a past calendar day —
@@ -59,21 +59,12 @@ function migrateDaysOff(data) {
 }
 
 function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    const parsed = raw ? JSON.parse(raw) : { days: {}, daysOff: {} }
-    if (!parsed.daysOff) parsed.daysOff = {}
-    const migrated = migrateDaysOff(parsed)
-    const fixed = autoCloseStaleSessions(migrated)
-    if (fixed !== parsed) saveData(fixed)
-    return fixed
-  } catch {
-    return { days: {}, daysOff: {} }
-  }
-}
-
-function saveData(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+  const parsed = loadTimeEntries() ?? { days: {}, daysOff: {} }
+  if (!parsed.daysOff) parsed.daysOff = {}
+  const migrated = migrateDaysOff(parsed)
+  const fixed = autoCloseStaleSessions(migrated)
+  if (fixed !== parsed) saveTimeEntries(fixed)
+  return fixed
 }
 
 export function useTimeTracker() {
@@ -98,7 +89,7 @@ export function useTimeTracker() {
       }
       todaySessions.push({ checkIn: new Date().toISOString(), checkOut: null })
       next.days[key] = todaySessions
-      saveData(next)
+      saveTimeEntries(next)
       return next
     })
   }, [])
@@ -122,7 +113,7 @@ export function useTimeTracker() {
       // Apply mutation
       sessions[lastIdx] = { ...sessions[lastIdx], checkOut: new Date(now).toISOString() }
       const next = { ...prev, days: { ...prev.days, [key]: sessions } }
-      saveData(next)
+      saveTimeEntries(next)
 
       // AFTER: all sessions closed including the one just closed
       const dailyAfter = toDecimalHours(sumSessionsMs(sessions))
@@ -159,7 +150,7 @@ export function useTimeTracker() {
       } else {
         next.days[dateKey] = sessions
       }
-      saveData(next)
+      saveTimeEntries(next)
       return next
     })
   }, [])
@@ -176,7 +167,7 @@ export function useTimeTracker() {
         return prev
       }
       const next = { ...prev, daysOff }
-      saveData(next)
+      saveTimeEntries(next)
       return next
     })
   }, [])
@@ -197,7 +188,7 @@ export function useTimeTracker() {
         }
       }
       const next = { ...prev, daysOff }
-      saveData(next)
+      saveTimeEntries(next)
       return next
     })
   }, [])
