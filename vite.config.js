@@ -37,13 +37,13 @@ export default defineConfig({
   ],
   test: {
     environment: 'jsdom',
-    setupFiles: ['./src/test/setup.js'],
+    setupFiles: ['./src/test/setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
       reportsDirectory: './coverage',
-      include: ['src/**/*.{js,jsx}'],
-      exclude: ['src/main.jsx', 'src/**/*.test.{js,jsx}']
+      include: ['src/**/*.{js,jsx,ts,tsx}'],
+      exclude: ['src/main.{jsx,tsx}', 'src/**/*.test.{js,jsx,ts,tsx}']
     }
   }
 })
