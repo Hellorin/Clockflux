@@ -18,7 +18,7 @@ function pad2(n: number): string {
 }
 
 function formatIcsDateFromKey(dateKey: string): string {
-  return dateKey.replace(/-/g, '')
+  return dateKey.replaceAll('-', '')
 }
 
 // DTEND is exclusive for all-day VEVENTs (RFC 5545), so return the next day.
@@ -38,9 +38,9 @@ function formatIcsTimestampUtc(date: Date): string {
 
 function escapeIcsText(s: unknown): string {
   return String(s)
-    .replace(/\\/g, '\\\\')
-    .replace(/;/g, '\\;')
-    .replace(/,/g, '\\,')
+    .replaceAll('\\', '\\\\')
+    .replaceAll(';', '\\;')
+    .replaceAll(',', '\\,')
     .replace(/\r?\n/g, '\\n')
 }
 

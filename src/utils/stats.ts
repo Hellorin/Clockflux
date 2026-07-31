@@ -229,7 +229,7 @@ export interface WeeklyTotal {
 export function buildWeeklyTotals(perDay: Pick<PerDay, 'key' | 'totalMs'>[], daysOff: DaysOffMap): WeeklyTotal[] {
   if (perDay.length === 0) return []
 
-  const keys = perDay.map(d => d.key).sort()
+  const keys = perDay.map(d => d.key).sort((a, b) => a.localeCompare(b))
   const firstMonday = mondayOf(parseKey(keys[0]))
   const lastMonday = mondayOf(parseKey(keys[keys.length - 1]))
 

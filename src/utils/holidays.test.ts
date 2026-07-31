@@ -43,6 +43,6 @@ describe('formatHolidayDays', () => {
   })
 
   it('falls back to 0 for non-finite input', () => {
-    expect(formatHolidayDays(NaN)).toBe('0')
+    expect(formatHolidayDays(Number.NaN)).toBe('0')
   })
 })
