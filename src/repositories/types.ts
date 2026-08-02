@@ -14,3 +14,8 @@ export interface PreferencesRepository {
   loadHoursFormat(): string | null
   saveHoursFormat(value: string): void
 }
+
+export interface VisitRepository {
+  hasVisited(): boolean
+  markVisited(): void
+}

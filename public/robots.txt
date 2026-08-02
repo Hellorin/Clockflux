@@ -1,0 +1,9 @@
+# TODO(domain): replace timeforge.example.com with the production origin.
+# It also appears in public/sitemap.xml and in index.html (canonical + JSON-LD).
+User-agent: *
+Allow: /
+
+# Dev-only scratch page that rasterizes the icon SVG; not part of the app.
+Disallow: /_icon_render.html
+
+Sitemap: https://timeforge.example.com/sitemap.xml

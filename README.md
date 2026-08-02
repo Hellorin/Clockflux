@@ -45,6 +45,7 @@ A lightweight work hours tracker PWA built with React and Vite. Track your daily
 ### Platform
 - **Offline-first PWA** — Installable on any device, works without internet
 - **Local storage** — No backend, no account — data stays on your device
+- **Landing page** — A crawlable home page shown once on a visitor's first visit, reachable afterwards from the **?** button in the header
 
 ## Tech Stack
 
@@ -78,9 +79,17 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 Every push and pull request to `main` runs the test suite with coverage and submits results to [SonarQube Cloud](https://sonarcloud.io/summary/new_code?id=Timeforge) (see `.github/workflows/sonarqube.yml`).
 
+## Landing Page & SEO
+
+The app has no server-side rendering, so the landing page is **static markup in `index.html`** rather than a React view — that is the only way the copy reaches crawlers that don't execute JavaScript. React owns visibility, not content, through three tokens: the `#landing` element, `[data-landing-dismiss]` controls, and a `data-landing` attribute on `<html>`. A missing attribute means *visible*, so any failure of the pre-paint script falls back to showing the content.
+
+A render-blocking script in `<head>` hides the landing before first paint for anyone who has visited before, so returning visitors never see it flash. `src/hooks/useLandingPage.ts` takes over from there.
+
+`index.html` also carries the meta description, canonical link and `WebApplication` JSON-LD. The production domain is not settled yet: **`timeforge.example.com` is a placeholder** appearing in four places — the canonical link and JSON-LD in `index.html`, plus `public/robots.txt` and `public/sitemap.xml`. `grep -rn "timeforge.example.com"` finds them all, and `src/test/indexHtml.test.ts` fails if only some are updated.
+
 ## Data Storage
 
-All session data is persisted in `localStorage` under the key `timeforge`. No data is sent to any server.
+All session data is persisted in `localStorage` under the key `timeforge`. Whether a visitor has seen the landing page is recorded separately under `timeforgeVisited`. No data is sent to any server.
 
 ## License
 
