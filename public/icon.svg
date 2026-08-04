@@ -1,27 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <radialGradient id="bgGlow" cx="50%" cy="38%" r="62%">
-      <stop offset="0%" stop-color="#182b1f"/>
+    <radialGradient id="bgGlow" cx="50%" cy="42%" r="65%">
+      <stop offset="0%" stop-color="#16241d"/>
       <stop offset="100%" stop-color="#0c1319"/>
     </radialGradient>
-    <linearGradient id="anvilGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#2ecc6a"/>
-      <stop offset="100%" stop-color="#155f30"/>
+    <linearGradient id="loopGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#bef264"/>
+      <stop offset="100%" stop-color="#4ade80"/>
+    </linearGradient>
+    <linearGradient id="loopTeal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5eead4"/>
+      <stop offset="100%" stop-color="#0d9488"/>
     </linearGradient>
     <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#22c55e" stop-opacity="0.4"/>
-      <stop offset="100%" stop-color="#22c55e" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#2dd4bf" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#2dd4bf" stop-opacity="0"/>
     </radialGradient>
-    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
-      <feGaussianBlur stdDeviation="7" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
     <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur stdDeviation="4" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <filter id="sparkGlow" x="-80%" y="-80%" width="260%" height="260%">
-      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feGaussianBlur stdDeviation="5" result="blur"/>
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
     <clipPath id="bgClip">
@@ -32,120 +28,16 @@
   <!-- Background -->
   <rect width="512" height="512" rx="110" ry="110" fill="url(#bgGlow)"/>
 
-  <!-- Subtle blueprint grid texture -->
-  <rect width="512" height="512" rx="110" ry="110" fill="none"
-        stroke="#22c55e" stroke-width="0" clip-path="url(#bgClip)"/>
-  <g clip-path="url(#bgClip)" opacity="0.035">
-    <line x1="0" y1="512" x2="512" y2="0" stroke="#22c55e" stroke-width="1"/>
-    <line x1="-64" y1="512" x2="448" y2="0" stroke="#22c55e" stroke-width="1"/>
-    <line x1="64" y1="512" x2="576" y2="0" stroke="#22c55e" stroke-width="1"/>
-    <line x1="-128" y1="512" x2="384" y2="0" stroke="#22c55e" stroke-width="1"/>
-    <line x1="128" y1="512" x2="640" y2="0" stroke="#22c55e" stroke-width="1"/>
-    <line x1="-192" y1="512" x2="320" y2="0" stroke="#22c55e" stroke-width="1"/>
-    <line x1="192" y1="512" x2="704" y2="0" stroke="#22c55e" stroke-width="1"/>
-    <line x1="256" y1="512" x2="768" y2="0" stroke="#22c55e" stroke-width="1"/>
-    <line x1="-256" y1="512" x2="256" y2="0" stroke="#22c55e" stroke-width="1"/>
+  <g clip-path="url(#bgClip)">
+    <!-- Ambient glow behind the mark -->
+    <circle cx="256" cy="256" r="180" fill="url(#centerGlow)"/>
+
+    <!-- Infinity mark: two circles tangent at the center point (256,256),
+         so they read as a single crossing "8" rather than a Venn overlap.
+         The right (teal) loop is drawn last so it sits on top at the cross. -->
+    <g filter="url(#softGlow)">
+      <circle cx="178" cy="256" r="78" fill="none" stroke="url(#loopGreen)" stroke-width="40"/>
+      <circle cx="334" cy="256" r="78" fill="none" stroke="url(#loopTeal)" stroke-width="40"/>
+    </g>
   </g>
-
-  <!-- Ambient glow behind clock -->
-  <circle cx="256" cy="200" r="160" fill="url(#centerGlow)"/>
-
-  <!-- Outer decorative ring -->
-  <circle cx="256" cy="200" r="162" fill="none" stroke="#22c55e" stroke-width="1.5" opacity="0.18"/>
-
-  <!-- Clock ring -->
-  <circle cx="256" cy="200" r="130" fill="none" stroke="#22c55e" stroke-width="13" filter="url(#softGlow)"/>
-
-  <!-- MAJOR TICK MARKS (12, 3, 6, 9) -->
-  <line x1="256" y1="70" x2="256" y2="97" stroke="#22c55e" stroke-width="10" stroke-linecap="round" filter="url(#softGlow)"/>
-  <line x1="386" y1="200" x2="359" y2="200" stroke="#22c55e" stroke-width="10" stroke-linecap="round" filter="url(#softGlow)"/>
-  <line x1="256" y1="330" x2="256" y2="303" stroke="#22c55e" stroke-width="10" stroke-linecap="round" filter="url(#softGlow)"/>
-  <line x1="126" y1="200" x2="153" y2="200" stroke="#22c55e" stroke-width="10" stroke-linecap="round" filter="url(#softGlow)"/>
-
-  <!-- MINOR TICK MARKS -->
-  <!-- h=1  (30° cw from 12) -->
-  <line x1="321" y1="87" x2="313" y2="101" stroke="#22c55e" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
-  <!-- h=2  (60°) -->
-  <line x1="369" y1="135" x2="356" y2="143" stroke="#22c55e" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
-  <!-- h=4  (120°) -->
-  <line x1="369" y1="265" x2="356" y2="257" stroke="#22c55e" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
-  <!-- h=5  (150°) -->
-  <line x1="321" y1="313" x2="313" y2="299" stroke="#22c55e" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
-  <!-- h=7  (210°) -->
-  <line x1="191" y1="313" x2="199" y2="299" stroke="#22c55e" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
-  <!-- h=8  (240°) -->
-  <line x1="143" y1="265" x2="156" y2="257" stroke="#22c55e" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
-  <!-- h=10 (300°) -->
-  <line x1="143" y1="135" x2="156" y2="143" stroke="#22c55e" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
-  <!-- h=11 (330°) -->
-  <line x1="191" y1="87" x2="199" y2="101" stroke="#22c55e" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
-
-  <!-- CLOCK HANDS — showing 10:10 (classic symmetric position) -->
-  <!-- Hour hand — 10:10 = 305° from 12 → endpoint (186, 151) -->
-  <line x1="256" y1="200" x2="186" y2="151" stroke="#22c55e" stroke-width="17" stroke-linecap="round" filter="url(#softGlow)"/>
-  <!-- Minute hand — 10 min = 60° from 12 → endpoint (350, 146) -->
-  <line x1="256" y1="200" x2="350" y2="146" stroke="#22c55e" stroke-width="11" stroke-linecap="round" filter="url(#softGlow)"/>
-
-  <!-- Center hub -->
-  <circle cx="256" cy="200" r="16" fill="#22c55e" filter="url(#glow)"/>
-  <circle cx="256" cy="200" r="8" fill="#d1fae5"/>
-
-  <!-- FORGE SPARKS — amber/golden, radiating up-right from center -->
-  <g filter="url(#sparkGlow)">
-    <!-- Primary spark trails -->
-    <line x1="262" y1="188" x2="271" y2="172" stroke="#fbbf24" stroke-width="3.5" stroke-linecap="round" opacity="0.95"/>
-    <line x1="272" y1="193" x2="287" y2="184" stroke="#fbbf24" stroke-width="3" stroke-linecap="round" opacity="0.90"/>
-    <line x1="267" y1="184" x2="281" y2="174" stroke="#fcd34d" stroke-width="2.5" stroke-linecap="round" opacity="0.80"/>
-    <line x1="259" y1="182" x2="262" y2="167" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" opacity="0.75"/>
-    <line x1="275" y1="197" x2="291" y2="196" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" opacity="0.70"/>
-    <!-- Spark dots -->
-    <circle cx="273" cy="169" r="4" fill="#fbbf24" opacity="0.95"/>
-    <circle cx="289" cy="181" r="3" fill="#fbbf24" opacity="0.88"/>
-    <circle cx="259" cy="164" r="2.5" fill="#fcd34d" opacity="0.82"/>
-    <circle cx="284" cy="169" r="2" fill="#f59e0b" opacity="0.75"/>
-    <circle cx="295" cy="193" r="2" fill="#fbbf24" opacity="0.65"/>
-    <circle cx="267" cy="157" r="1.5" fill="#fbbf24" opacity="0.60"/>
-    <circle cx="300" cy="178" r="1.5" fill="#fcd34d" opacity="0.55"/>
-  </g>
-
-  <!-- ANVIL (centered at x=256, y=350 to y=432) -->
-  <!--
-    Silhouette (side view):
-    - flat top surface, x=192–318
-    - horn pointing left
-    - waist body, x=216–296
-    - wide base, x=190–322
-  -->
-  <path d="
-    M 192 350
-    L 318 350
-    L 318 374
-    L 296 374
-    L 296 408
-    L 322 408
-    L 322 432
-    L 190 432
-    L 190 408
-    L 216 408
-    L 216 374
-    L 192 374
-    L 150 362
-    Z
-  " fill="url(#anvilGrad)"/>
-
-  <!-- Anvil top surface highlight -->
-  <rect x="194" y="352" width="122" height="7" rx="2" fill="#86efac" opacity="0.38"/>
-
-  <!-- Anvil body edge highlight -->
-  <rect x="218" y="375" width="5" height="32" rx="2" fill="#86efac" opacity="0.18"/>
-
-  <!-- Anvil base top edge -->
-  <rect x="192" y="409" width="128" height="4" rx="2" fill="#86efac" opacity="0.20"/>
-
-  <!-- Horn highlight -->
-  <path d="M 192 351 L 151 362 L 165 358 Z" fill="#86efac" opacity="0.25"/>
-
-  <!-- Ground glow under anvil -->
-  <ellipse cx="256" cy="437" rx="105" ry="9" fill="#22c55e" opacity="0.12" filter="url(#softGlow)"/>
-
 </svg>

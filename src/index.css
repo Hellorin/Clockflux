@@ -28,6 +28,9 @@
   --accent-in:      color-mix(in srgb, #16a34a var(--theme-mix), #4ade80);
   --accent-out:     color-mix(in srgb, #dc2626 var(--theme-mix), #f87171);
   --accent-partial: color-mix(in srgb, #d97706 var(--theme-mix), #fbbf24);
+  /* Brand mark gradient (green -> teal), independent of --theme-mix: it's the
+     app's identity color, not a light/dark status color like --accent-*. */
+  --brand-gradient: linear-gradient(135deg, #4ade80, #2dd4bf);
   --text:        color-mix(in srgb, #1c1917 var(--theme-mix), #e2e8f0);
   --text-muted:  color-mix(in srgb, #78716c var(--theme-mix), #94a3b8);
   --radius: 12px;
@@ -2090,6 +2093,8 @@ input[type="time"]:focus {
   width: 72px;
   height: 72px;
   margin-top: 1rem;
+  border-radius: 20px;
+  filter: drop-shadow(0 0 24px color-mix(in srgb, #2dd4bf 35%, transparent));
 }
 
 .landing__eyebrow {
@@ -2121,7 +2126,7 @@ input[type="time"]:focus {
   padding: 0.85rem 2rem;
   border: 2px solid transparent;
   border-radius: 999px;
-  background: var(--accent-in);
+  background: var(--brand-gradient);
   /* --bg, not white: it inverts with the theme and keeps contrast in both. */
   color: var(--bg);
   font-size: 1rem;
@@ -2135,7 +2140,7 @@ input[type="time"]:focus {
 .landing__cta:hover { transform: translateY(-1px); }
 
 .landing__cta:focus-visible {
-  box-shadow: 0 0 0 3px var(--accent-in);
+  box-shadow: 0 0 0 3px color-mix(in srgb, #2dd4bf 60%, #4ade80);
 }
 
 .landing__cta--secondary {
