@@ -4,4 +4,8 @@ Allow: /
 # Dev-only scratch page that rasterizes the icon SVG; not part of the app.
 Disallow: /_icon_render.html
 
+# Manual data export/import tool for moving between Clockflux origins; not
+# part of the app and not meant to be discovered via search.
+Disallow: /_data_transfer.html
+
 Sitemap: https://clockflux.app/sitemap.xml
