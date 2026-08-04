@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import App from './App'
+import { mountLandingFixture } from './test/landingFixture'
 
 describe('App', () => {
   beforeEach(() => {
@@ -15,7 +16,7 @@ describe('App', () => {
 
   it('renders the tracker view by default', () => {
     render(<App />)
-    expect(screen.getByText('Timeforge')).toBeInTheDocument()
+    expect(screen.getByText('Clockflux')).toBeInTheDocument()
     expect(screen.getByRole('switch')).toBeInTheDocument()
   })
 
@@ -77,5 +78,21 @@ describe('App', () => {
     vi.advanceTimersByTime(8 * 3600000 + 60000)
     fireEvent.click(screen.getByRole('switch')) // check out, crossing 8h
     expect(screen.getByText('Daily goal smashed!')).toBeInTheDocument()
+  })
+
+  describe('landing page', () => {
+    it('re-opens the landing from the header and makes the app inert', () => {
+      const landing = mountLandingFixture()
+      document.documentElement.dataset.landing = 'hidden'
+      render(<App />)
+
+      fireEvent.click(screen.getByLabelText('About Clockflux'))
+      expect(document.documentElement.dataset.landing).toBe('visible')
+      expect(document.querySelector('.app')).toHaveAttribute('inert')
+
+      fireEvent.click(landing.querySelector('[data-landing-dismiss]')!)
+      expect(document.documentElement.dataset.landing).toBe('hidden')
+      expect(document.querySelector('.app')).not.toHaveAttribute('inert')
+    })
   })
 })

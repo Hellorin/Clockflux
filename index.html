@@ -12,18 +12,159 @@
         } catch(e) {}
       })();
     </script>
+    <script>
+      /* Pre-paint: hide the landing page for returning visitors so it never
+         flashes. Runs before the stylesheet and before any module.
+         'timeforgeVisited' is duplicated from VISIT_STORAGE_KEY in
+         src/repositories/localStorageVisitRepository.ts — src/test/indexHtml.test.ts
+         asserts the two stay in sync. */
+      (function() {
+        try {
+          if (localStorage.getItem('timeforgeVisited') === '1') {
+            document.documentElement.setAttribute('data-landing', 'hidden');
+          }
+        } catch(e) {}
+      })();
+    </script>
+    <style>
+      /* Visibility contract only — all landing styling lives in src/index.css.
+         Inlined because index.css is imported from main.tsx, so in dev it is
+         injected by JavaScript and would arrive too late to prevent a flash.
+         No attribute means visible, which is what crawlers and no-JS visitors get. */
+      #landing { display: block; }
+      :root[data-landing="hidden"] #landing { display: none; }
+      :root:not([data-landing="hidden"]) body { overflow: hidden; }
+    </style>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#1a1a2e" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Timeforge" />
+    <meta name="apple-mobile-web-app-title" content="Clockflux" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
-    <title>Timeforge</title>
+    <title>Clockflux — Free Work Hours Tracker PWA</title>
+    <meta name="description" content="Clockflux is a free, offline-first work hours tracker. Check in and out with one tap, review your history and calendar, track your holiday allowance, and monitor your work/life balance — all stored locally in your browser, with no account and no server." />
+    <link rel="canonical" href="https://clockflux.app/" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Clockflux",
+        "url": "https://clockflux.app/",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Any modern web browser",
+        "browserRequirements": "Requires JavaScript",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "description": "A free, offline-first work hours tracker. Check in and out with one tap, review your history and calendar, track your holiday allowance, and monitor your work/life balance — all stored locally in your browser, with no account and no server.",
+        "featureList": [
+          "One-tap check in and check out with a live timer",
+          "Daily and weekly hour totals in decimal or h:mm",
+          "Monthly calendar with per-day session editing",
+          "Holiday allowance tracking with gradual or immediate accrual",
+          "Work/life health signals and cumulative overtime charts",
+          "Installable offline-first progressive web app",
+          "Local-only storage with no account and no backend"
+        ]
+      }
+    </script>
   </head>
   <body>
+    <div id="landing" class="landing" role="region" aria-labelledby="landing-title" tabindex="-1">
+      <div class="landing__content">
+        <button type="button" class="landing__close" data-landing-dismiss aria-label="Close and go to the tracker">✕</button>
+
+        <img class="landing__logo" src="/icon-192.png" width="72" height="72" alt="" />
+        <p class="landing__eyebrow">Work hours tracker · Progressive web app</p>
+        <h1 class="landing__title" id="landing-title">Track your work hours, privately</h1>
+        <p class="landing__lede">
+          Clockflux is a lightweight time tracker for your working day. Tap once to check in,
+          tap again to check out, and it keeps the running totals for you — today, this week,
+          and across the year. It works offline, it is free, and every hour you log stays in
+          your own browser.
+        </p>
+
+        <button type="button" class="landing__cta" data-landing-dismiss>Start tracking →</button>
+        <p class="landing__cta-note">No sign-up. Nothing leaves your device.</p>
+
+        <section class="landing__section">
+          <h2 class="landing__section-title">Track your day</h2>
+          <p class="landing__text">
+            A single slide toggle starts and stops the clock, with a live timer for the session
+            in progress. Clockflux adds up every session in the day, shows the total in decimal
+            hours or h:mm — whichever you prefer — and highlights your week in green once you
+            are on track for the days elapsed so far. Weekends and days you have marked off are
+            skipped automatically. Hit your daily or weekly target and it says so.
+          </p>
+        </section>
+
+        <section class="landing__section">
+          <h2 class="landing__section-title">See the whole month</h2>
+          <p class="landing__text">
+            The calendar gives you a month at a glance: which days you logged, which you took
+            off, and how the hours landed. Open any past day to correct a forgotten check-out,
+            add a session you missed, or mark a stretch of days off in bulk.
+          </p>
+        </section>
+
+        <section class="landing__section">
+          <h2 class="landing__section-title">Keep track of holiday</h2>
+          <p class="landing__text">
+            Set your annual allowance and Clockflux shows what you have used, what you have
+            accrued so far, and what is still available. Choose whether your days accrue
+            gradually through the year or are available all at once, and the balance prorates
+            automatically if you started partway through the year. If your planned and used
+            days are heading past your allowance, you get a warning before it happens.
+          </p>
+        </section>
+
+        <section class="landing__section">
+          <h2 class="landing__section-title">Watch your work/life balance</h2>
+          <p class="landing__text">
+            The health view reads your recent weeks and tells you plainly whether you are on
+            track, working under, or drifting into sustained overtime. A cumulative overtime
+            chart shows the running balance against your weekly target, with a breakdown of
+            hours versus target for each of the last several weeks.
+          </p>
+        </section>
+
+        <section class="landing__section">
+          <h2 class="landing__section-title">Offline, installable, and yours</h2>
+          <p class="landing__text">
+            Clockflux is a progressive web app: install it on a phone, tablet, or desktop and
+            it opens like any other app and works with no internet connection. There is no
+            account to create and no backend to trust — all of your session data is written to
+            your browser's local storage and never sent anywhere.
+          </p>
+        </section>
+
+        <footer class="landing__footer">
+          <p class="landing__text">Ready when you are — this page won't get in your way again.</p>
+          <button type="button" class="landing__cta landing__cta--secondary" data-landing-dismiss>Open Clockflux</button>
+        </footer>
+      </div>
+    </div>
+
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+
+    <script>
+      /* The dismiss controls above are painted before React mounts, so latch a
+         click here and hide the landing immediately. Recording the visit stays
+         in useLandingPage — this only captures the intent. */
+      window.__clockfluxLandingDismissed = false;
+      document.addEventListener('click', function(e) {
+        if (e.target && e.target.closest && e.target.closest('[data-landing-dismiss]')) {
+          window.__clockfluxLandingDismissed = true;
+          document.documentElement.setAttribute('data-landing', 'hidden');
+        }
+      }, true);
+    </script>
+
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

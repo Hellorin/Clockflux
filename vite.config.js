@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon-192.png', 'icon-512.png'],
       manifest: {
-        name: 'Timeforge',
-        short_name: 'Timeforge',
-        description: 'Track your work hours',
+        name: 'Clockflux',
+        short_name: 'Clockflux',
+        description: 'A free, offline-first work hours tracker. Check in and out with one tap, track your holiday allowance, and monitor your work/life balance — all stored locally in your browser.',
         theme_color: '#1a1a2e',
         background_color: '#1a1a2e',
         display: 'standalone',
@@ -31,7 +31,10 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // Without this the service worker answers navigations to these paths
+        // with the SPA shell instead of the real files.
+        navigateFallbackDenylist: [/^\/robots\.txt$/, /^\/sitemap\.xml$/]
       }
     })
   ],

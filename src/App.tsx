@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTimeTracker } from './hooks/useTimeTracker'
 import { useAppSettings } from './hooks/useAppSettings'
+import { useLandingPage } from './hooks/useLandingPage'
 import SlideToggle from './components/SlideToggle'
 import LiveTimer from './components/LiveTimer'
 import TodaySummary from './components/TodaySummary'
@@ -29,6 +30,8 @@ export default function App() {
   const [selectedDay, setSelectedDay] = useState<SelectedDay | null>(null)
   const [hoursFormat, setHoursFormat] = useState<HoursFormat>(() => (preferencesService.loadHoursFormat() as HoursFormat) || 'decimal')
   const [celebrationMilestone, setCelebrationMilestone] = useState<Milestone | null>(null)
+  const aboutBtnRef = useRef<HTMLButtonElement>(null)
+  const { isLandingOpen, openLanding } = useLandingPage({ returnFocusRef: aboutBtnRef })
 
   useEffect(() => {
     setMilestoneCallback(type => setCelebrationMilestone(type))
@@ -53,10 +56,22 @@ export default function App() {
       milestone={celebrationMilestone}
       onDismiss={() => setCelebrationMilestone(null)}
     />
-    <div className="app">
+    <div className="app" inert={isLandingOpen}>
       <header className="app-header">
-        <h1 className="app-title">Timeforge</h1>
+        {/* Not an <h1>: the landing page in index.html owns the document's only
+            top-level heading, so the SEO signal stays unambiguous. */}
+        <p className="app-title">Clockflux</p>
         <p className="app-date">{formatDateKey(todayKey)}</p>
+        <button
+          ref={aboutBtnRef}
+          type="button"
+          className="app-about-btn"
+          onClick={openLanding}
+          aria-label="About Clockflux"
+          title="About Clockflux"
+        >
+          ?
+        </button>
       </header>
 
       <main className="app-main">

@@ -142,7 +142,7 @@ describe('CalendarView', () => {
     expect(exportBtn).not.toBeDisabled()
     fireEvent.click(exportBtn)
     expect(buildSpy).toHaveBeenCalledWith({ '2024-01-10': 'personal' }, 2024, 0)
-    expect(downloadSpy).toHaveBeenCalledWith('timeforge-days-off-2024-01.ics', 'ICS_CONTENT')
+    expect(downloadSpy).toHaveBeenCalledWith('clockflux-days-off-2024-01.ics', 'ICS_CONTENT')
   })
 
   it('disables export when there are no days off in the current month', () => {

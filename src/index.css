@@ -28,6 +28,9 @@
   --accent-in:      color-mix(in srgb, #16a34a var(--theme-mix), #4ade80);
   --accent-out:     color-mix(in srgb, #dc2626 var(--theme-mix), #f87171);
   --accent-partial: color-mix(in srgb, #d97706 var(--theme-mix), #fbbf24);
+  /* Brand mark gradient (green -> teal), independent of --theme-mix: it's the
+     app's identity color, not a light/dark status color like --accent-*. */
+  --brand-gradient: linear-gradient(135deg, #4ade80, #2dd4bf);
   --text:        color-mix(in srgb, #1c1917 var(--theme-mix), #e2e8f0);
   --text-muted:  color-mix(in srgb, #78716c var(--theme-mix), #94a3b8);
   --radius: 12px;
@@ -60,9 +63,32 @@ body {
 }
 
 .app-header {
+  position: relative;
   text-align: center;
   padding: 2rem 0 1.5rem;
 }
+
+.app-about-btn {
+  position: absolute;
+  top: 2rem;
+  right: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.app-about-btn:hover { opacity: 1; }
 
 .app-title {
   margin: 0;
@@ -2015,4 +2041,148 @@ input[type="time"]:focus {
 
 .week-breakdown__note {
   font-size: 0.75rem;
+}
+
+/* ─── Landing Page ──────────────────────────────────────────────────────── */
+/* Markup lives in index.html so crawlers see it without running JavaScript.
+   `display` is deliberately not set here — visibility is owned by the inline
+   critical CSS in index.html, which loads before this file. */
+
+.landing {
+  position: fixed;
+  inset: 0;
+  /* Above .tab-bar (100), .health-guide-overlay (200) and .celebration-overlay (300). */
+  z-index: 400;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--bg);
+  color: var(--text);
+  padding: 2rem 1rem calc(2.5rem + env(safe-area-inset-bottom));
+  outline: none;
+}
+
+.landing__content {
+  position: relative;
+  max-width: 560px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+}
+
+.landing__close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0.2rem 0.4rem;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.landing__close:hover { opacity: 1; }
+
+.landing__logo {
+  width: 72px;
+  height: 72px;
+  margin-top: 1rem;
+  border-radius: 20px;
+  filter: drop-shadow(0 0 24px color-mix(in srgb, #2dd4bf 35%, transparent));
+}
+
+.landing__eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.landing__title {
+  margin: 0;
+  font-size: clamp(1.75rem, 6vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.landing__lede {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.landing__cta {
+  margin-top: 1rem;
+  padding: 0.85rem 2rem;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--brand-gradient);
+  /* --bg, not white: it inverts with the theme and keeps contrast in both. */
+  color: var(--bg);
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.15s ease, box-shadow 0.35s ease;
+}
+
+.landing__cta:hover { transform: translateY(-1px); }
+
+.landing__cta:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, #2dd4bf 60%, #4ade80);
+}
+
+.landing__cta--secondary {
+  background: transparent;
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+
+.landing__cta-note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.landing__section {
+  width: 100%;
+  margin-top: 1.25rem;
+  padding: 1rem 1.1rem;
+  background: var(--surface-alt);
+  border-radius: var(--radius);
+  text-align: left;
+}
+
+.landing__section-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.landing__text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: var(--text-muted);
+}
+
+.landing__footer {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
 }

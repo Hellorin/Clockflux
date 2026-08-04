@@ -1,17 +1,17 @@
-# Timeforge
+# Clockflux
 
 **Quality:**
-[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=Timeforge&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=Timeforge)
-[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Timeforge&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=Timeforge)
-[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Timeforge&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=Timeforge)
-[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=Timeforge&metric=bugs)](https://sonarcloud.io/summary/new_code?id=Timeforge)
-[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=Timeforge&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=Timeforge)
-[![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=Timeforge&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=Timeforge)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=Clockflux&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=Clockflux)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Clockflux&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=Clockflux)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Clockflux&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=Clockflux)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=Clockflux&metric=bugs)](https://sonarcloud.io/summary/new_code?id=Clockflux)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=Clockflux&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=Clockflux)
+[![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=Clockflux&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=Clockflux)
 
 **Codebase:**
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Timeforge&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Timeforge)
-[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=Timeforge&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=Timeforge)
-[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=Timeforge&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=Timeforge)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Clockflux&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Clockflux)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=Clockflux&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=Clockflux)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=Clockflux&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=Clockflux)
 
 A lightweight work hours tracker PWA built with React and Vite. Track your daily check-ins and check-outs, review your history, manage holiday allowance, and monitor your work/life health — all stored locally in your browser.
 
@@ -45,6 +45,7 @@ A lightweight work hours tracker PWA built with React and Vite. Track your daily
 ### Platform
 - **Offline-first PWA** — Installable on any device, works without internet
 - **Local storage** — No backend, no account — data stays on your device
+- **Landing page** — A crawlable home page shown once on a visitor's first visit, reachable afterwards from the **?** button in the header
 
 ## Tech Stack
 
@@ -76,11 +77,19 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ## Code Quality
 
-Every push and pull request to `main` runs the test suite with coverage and submits results to [SonarQube Cloud](https://sonarcloud.io/summary/new_code?id=Timeforge) (see `.github/workflows/sonarqube.yml`).
+Every push and pull request to `main` runs the test suite with coverage and submits results to [SonarQube Cloud](https://sonarcloud.io/summary/new_code?id=Clockflux) (see `.github/workflows/sonarqube.yml`).
+
+## Landing Page & SEO
+
+The app has no server-side rendering, so the landing page is **static markup in `index.html`** rather than a React view — that is the only way the copy reaches crawlers that don't execute JavaScript. React owns visibility, not content, through three tokens: the `#landing` element, `[data-landing-dismiss]` controls, and a `data-landing` attribute on `<html>`. A missing attribute means *visible*, so any failure of the pre-paint script falls back to showing the content.
+
+A render-blocking script in `<head>` hides the landing before first paint for anyone who has visited before, so returning visitors never see it flash. `src/hooks/useLandingPage.ts` takes over from there.
+
+`index.html` also carries the meta description, canonical link and `WebApplication` JSON-LD, all pointing at the production domain `https://clockflux.app/`. The same URL appears in `public/robots.txt` and `public/sitemap.xml`; `src/test/indexHtml.test.ts` fails if they drift apart.
 
 ## Data Storage
 
-All session data is persisted in `localStorage` under the key `timeforge`. No data is sent to any server.
+All session data is persisted in `localStorage` under the key `timeforge`. Whether a visitor has seen the landing page is recorded separately under `timeforgeVisited`. No data is sent to any server.
 
 ## License
 
