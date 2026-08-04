@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/react"
 import { useState, useEffect, useRef } from 'react'
 import { useTimeTracker } from './hooks/useTimeTracker'
 import { useAppSettings } from './hooks/useAppSettings'
@@ -165,6 +166,7 @@ export default function App() {
         </button>
       </nav>
     </div>
+    <Analytics />
     </>
   )
 }
