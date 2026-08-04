@@ -9,7 +9,7 @@ describe('useLandingPage', () => {
   beforeEach(() => {
     localStorage.clear()
     delete document.documentElement.dataset.landing
-    delete window.__timeforgeLandingDismissed
+    delete window.__clockfluxLandingDismissed
   })
 
   it('stays inert when the landing markup is absent', () => {
@@ -129,7 +129,7 @@ describe('useLandingPage', () => {
 
   it('honours a dismiss click that landed before hydration', () => {
     mountLandingFixture()
-    window.__timeforgeLandingDismissed = true
+    window.__clockfluxLandingDismissed = true
 
     const { result } = renderHook(() => useLandingPage())
 

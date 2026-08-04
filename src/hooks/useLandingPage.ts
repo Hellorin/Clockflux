@@ -30,7 +30,7 @@ function readInitialOpen(): boolean {
   // No landing markup at all — component tests render <App /> into a bare
   // document, and the hook stays inert there.
   if (!getLandingElement()) return false
-  if (window.__timeforgeLandingDismissed) return false
+  if (window.__clockfluxLandingDismissed) return false
   // Honour the decision the pre-paint script in index.html already made, so we
   // never re-open something that has already been hidden without a flash...
   if (document.documentElement.dataset.landing === HIDDEN) return false
@@ -63,7 +63,7 @@ export function useLandingPage(options: UseLandingPageOptions = {}): LandingPage
   // external system" case the rule below is not aimed at.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (window.__timeforgeLandingDismissed) setIsLandingOpen(false)
+    if (window.__clockfluxLandingDismissed) setIsLandingOpen(false)
   }, [])
 
   useEffect(() => {

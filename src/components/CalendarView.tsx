@@ -155,7 +155,7 @@ export default function CalendarView({ allDays, onDayClick, daysOff = {}, onBulk
   function handleExportIcs() {
     if (!canExport) return
     const ics = buildDaysOffIcs(daysOff, currentMonth.year, currentMonth.month)
-    const filename = `timeforge-days-off-${currentMonth.year}-${String(currentMonth.month + 1).padStart(2, '0')}.ics`
+    const filename = `clockflux-days-off-${currentMonth.year}-${String(currentMonth.month + 1).padStart(2, '0')}.ics`
     downloadIcsFile(filename, ics)
   }
 

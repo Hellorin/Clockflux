@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon-192.png', 'icon-512.png'],
       manifest: {
-        name: 'Timeforge',
-        short_name: 'Timeforge',
+        name: 'Clockflux',
+        short_name: 'Clockflux',
         description: 'A free, offline-first work hours tracker. Check in and out with one tap, track your holiday allowance, and monitor your work/life balance — all stored locally in your browser.',
         theme_color: '#1a1a2e',
         background_color: '#1a1a2e',

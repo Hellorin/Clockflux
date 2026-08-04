@@ -9,7 +9,7 @@ afterEach(() => {
   // does not reach them and they would leak between files.
   delete document.documentElement.dataset.theme
   delete document.documentElement.dataset.landing
-  delete window.__timeforgeLandingDismissed
+  delete window.__clockfluxLandingDismissed
   document.getElementById('landing')?.remove()
 })
 

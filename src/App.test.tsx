@@ -16,7 +16,7 @@ describe('App', () => {
 
   it('renders the tracker view by default', () => {
     render(<App />)
-    expect(screen.getByText('Timeforge')).toBeInTheDocument()
+    expect(screen.getByText('Clockflux')).toBeInTheDocument()
     expect(screen.getByRole('switch')).toBeInTheDocument()
   })
 
@@ -86,7 +86,7 @@ describe('App', () => {
       document.documentElement.dataset.landing = 'hidden'
       render(<App />)
 
-      fireEvent.click(screen.getByLabelText('About Timeforge'))
+      fireEvent.click(screen.getByLabelText('About Clockflux'))
       expect(document.documentElement.dataset.landing).toBe('visible')
       expect(document.querySelector('.app')).toHaveAttribute('inert')
 

@@ -59,7 +59,7 @@ export function buildDaysOffIcs(daysOff: DaysOffMap, year: number, month: number
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Timeforge//Days Off Export//EN',
+    'PRODID:-//Clockflux//Days Off Export//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
   ]
@@ -73,7 +73,7 @@ export function buildDaysOffIcs(daysOff: DaysOffMap, year: number, month: number
     if (!summary) continue
     lines.push(
       'BEGIN:VEVENT',
-      `UID:daysoff-${dateKey}-${type}@timeforge.local`,
+      `UID:daysoff-${dateKey}-${type}@clockflux.local`,
       `DTSTAMP:${stamp}`,
       `DTSTART;VALUE=DATE:${formatIcsDateFromKey(dateKey)}`,
       `DTEND;VALUE=DATE:${nextDayIcsDate(dateKey)}`,

@@ -60,15 +60,15 @@ export default function App() {
       <header className="app-header">
         {/* Not an <h1>: the landing page in index.html owns the document's only
             top-level heading, so the SEO signal stays unambiguous. */}
-        <p className="app-title">Timeforge</p>
+        <p className="app-title">Clockflux</p>
         <p className="app-date">{formatDateKey(todayKey)}</p>
         <button
           ref={aboutBtnRef}
           type="button"
           className="app-about-btn"
           onClick={openLanding}
-          aria-label="About Timeforge"
-          title="About Timeforge"
+          aria-label="About Clockflux"
+          title="About Clockflux"
         >
           ?
         </button>

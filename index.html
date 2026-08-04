@@ -40,21 +40,18 @@
     <meta name="theme-color" content="#1a1a2e" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Timeforge" />
+    <meta name="apple-mobile-web-app-title" content="Clockflux" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
-    <title>Timeforge — Free Work Hours Tracker PWA</title>
-    <meta name="description" content="Timeforge is a free, offline-first work hours tracker. Check in and out with one tap, review your history and calendar, track your holiday allowance, and monitor your work/life balance — all stored locally in your browser, with no account and no server." />
-    <!-- TODO(domain): replace timeforge.example.com once the production domain is
-         known. It appears in exactly four places: the canonical link and the
-         JSON-LD block below, plus public/robots.txt and public/sitemap.xml. -->
-    <link rel="canonical" href="https://timeforge.example.com/" />
+    <title>Clockflux — Free Work Hours Tracker PWA</title>
+    <meta name="description" content="Clockflux is a free, offline-first work hours tracker. Check in and out with one tap, review your history and calendar, track your holiday allowance, and monitor your work/life balance — all stored locally in your browser, with no account and no server." />
+    <link rel="canonical" href="https://clockflux.app/" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "WebApplication",
-        "name": "Timeforge",
-        "url": "https://timeforge.example.com/",
+        "name": "Clockflux",
+        "url": "https://clockflux.app/",
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "Any modern web browser",
         "browserRequirements": "Requires JavaScript",
@@ -86,7 +83,7 @@
         <p class="landing__eyebrow">Work hours tracker · Progressive web app</p>
         <h1 class="landing__title" id="landing-title">Track your work hours, privately</h1>
         <p class="landing__lede">
-          Timeforge is a lightweight time tracker for your working day. Tap once to check in,
+          Clockflux is a lightweight time tracker for your working day. Tap once to check in,
           tap again to check out, and it keeps the running totals for you — today, this week,
           and across the year. It works offline, it is free, and every hour you log stays in
           your own browser.
@@ -99,7 +96,7 @@
           <h2 class="landing__section-title">Track your day</h2>
           <p class="landing__text">
             A single slide toggle starts and stops the clock, with a live timer for the session
-            in progress. Timeforge adds up every session in the day, shows the total in decimal
+            in progress. Clockflux adds up every session in the day, shows the total in decimal
             hours or h:mm — whichever you prefer — and highlights your week in green once you
             are on track for the days elapsed so far. Weekends and days you have marked off are
             skipped automatically. Hit your daily or weekly target and it says so.
@@ -118,7 +115,7 @@
         <section class="landing__section">
           <h2 class="landing__section-title">Keep track of holiday</h2>
           <p class="landing__text">
-            Set your annual allowance and Timeforge shows what you have used, what you have
+            Set your annual allowance and Clockflux shows what you have used, what you have
             accrued so far, and what is still available. Choose whether your days accrue
             gradually through the year or are available all at once, and the balance prorates
             automatically if you started partway through the year. If your planned and used
@@ -139,7 +136,7 @@
         <section class="landing__section">
           <h2 class="landing__section-title">Offline, installable, and yours</h2>
           <p class="landing__text">
-            Timeforge is a progressive web app: install it on a phone, tablet, or desktop and
+            Clockflux is a progressive web app: install it on a phone, tablet, or desktop and
             it opens like any other app and works with no internet connection. There is no
             account to create and no backend to trust — all of your session data is written to
             your browser's local storage and never sent anywhere.
@@ -148,7 +145,7 @@
 
         <footer class="landing__footer">
           <p class="landing__text">Ready when you are — this page won't get in your way again.</p>
-          <button type="button" class="landing__cta landing__cta--secondary" data-landing-dismiss>Open Timeforge</button>
+          <button type="button" class="landing__cta landing__cta--secondary" data-landing-dismiss>Open Clockflux</button>
         </footer>
       </div>
     </div>
@@ -159,10 +156,10 @@
       /* The dismiss controls above are painted before React mounts, so latch a
          click here and hide the landing immediately. Recording the visit stays
          in useLandingPage — this only captures the intent. */
-      window.__timeforgeLandingDismissed = false;
+      window.__clockfluxLandingDismissed = false;
       document.addEventListener('click', function(e) {
         if (e.target && e.target.closest && e.target.closest('[data-landing-dismiss]')) {
-          window.__timeforgeLandingDismissed = true;
+          window.__clockfluxLandingDismissed = true;
           document.documentElement.setAttribute('data-landing', 'hidden');
         }
       }, true);
