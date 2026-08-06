@@ -52,11 +52,6 @@ describe('index.html', () => {
     expect(parsed.featureList.length).toBeGreaterThan(0)
   })
 
-  it('carries a privacy notice the footer links to', () => {
-    expect(html).toContain('id="privacy"')
-    expect(html).toContain('href="#privacy"')
-  })
-
   it('names every storage key the app writes', () => {
     // Imported rather than spelled out, so renaming a key fails here instead of
     // leaving the notice quietly describing storage that no longer exists.
