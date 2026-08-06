@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act, fireEvent } from '@testing-library/react'
 import { createRef } from 'react'
 import { useLandingPage } from './useLandingPage'
@@ -10,6 +10,10 @@ describe('useLandingPage', () => {
     localStorage.clear()
     delete document.documentElement.dataset.landing
     delete window.__clockfluxLandingDismissed
+    window.location.hash = ''
+    // Stubbed once on the prototype in src/test/setup.ts, so call history would
+    // otherwise carry across cases.
+    vi.mocked(Element.prototype.scrollIntoView).mockClear()
   })
 
   it('stays inert when the landing markup is absent', () => {
@@ -125,6 +129,78 @@ describe('useLandingPage', () => {
 
     expect(document.activeElement).toBe(about)
     about.remove()
+  })
+
+  it('opens at the privacy notice for a returning visitor following the link', () => {
+    const landing = mountLandingFixture()
+    document.documentElement.dataset.landing = 'hidden'
+    localStorage.setItem(VISIT_STORAGE_KEY, '1')
+    window.location.hash = '#privacy'
+
+    const { result } = renderHook(() => useLandingPage())
+
+    expect(result.current.isLandingOpen).toBe(true)
+    expect(document.documentElement.dataset.landing).toBe('visible')
+    expect(landing.querySelector('#privacy')!.scrollIntoView).toHaveBeenCalled()
+    // The notice is reachable without re-arming the landing for the next visit.
+    expect(localStorage.getItem(VISIT_STORAGE_KEY)).toBe('1')
+  })
+
+  it('leaves the scroll alone when the landing is re-opened from the header', () => {
+    mountLandingFixture()
+    document.documentElement.dataset.landing = 'hidden'
+    localStorage.setItem(VISIT_STORAGE_KEY, '1')
+    const { result } = renderHook(() => useLandingPage())
+
+    // The hash sticks around in the address bar after a visit to the notice, so
+    // re-opening must not silently jump past the copy the button is there for.
+    window.location.hash = '#privacy'
+    act(() => result.current.openLanding())
+
+    expect(result.current.isLandingOpen).toBe(true)
+    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled()
+  })
+
+  it('opens the notice when the hash changes without a reload', () => {
+    // Following a #privacy link from inside the tracker never re-mounts, so the
+    // initial read cannot be what handles this.
+    const landing = mountLandingFixture()
+    document.documentElement.dataset.landing = 'hidden'
+    localStorage.setItem(VISIT_STORAGE_KEY, '1')
+    const { result } = renderHook(() => useLandingPage())
+    expect(result.current.isLandingOpen).toBe(false)
+
+    act(() => {
+      window.location.hash = '#privacy'
+      fireEvent(window, new HashChangeEvent('hashchange'))
+    })
+
+    expect(result.current.isLandingOpen).toBe(true)
+    expect(landing.querySelector('#privacy')!.scrollIntoView).toHaveBeenCalled()
+  })
+
+  it('ignores a hash change to anything other than the notice', () => {
+    mountLandingFixture()
+    document.documentElement.dataset.landing = 'hidden'
+    localStorage.setItem(VISIT_STORAGE_KEY, '1')
+    const { result } = renderHook(() => useLandingPage())
+
+    act(() => {
+      window.location.hash = '#somewhere-else'
+      fireEvent(window, new HashChangeEvent('hashchange'))
+    })
+
+    expect(result.current.isLandingOpen).toBe(false)
+  })
+
+  it('lets a pre-hydration dismiss win over the privacy hash', () => {
+    mountLandingFixture()
+    window.location.hash = '#privacy'
+    window.__clockfluxLandingDismissed = true
+
+    const { result } = renderHook(() => useLandingPage())
+
+    expect(result.current.isLandingOpen).toBe(false)
   })
 
   it('honours a dismiss click that landed before hydration', () => {

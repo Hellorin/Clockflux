@@ -17,10 +17,15 @@
          flashes. Runs before the stylesheet and before any module.
          'timeforgeVisited' is duplicated from VISIT_STORAGE_KEY in
          src/repositories/localStorageVisitRepository.ts — src/test/indexHtml.test.ts
-         asserts the two stay in sync. */
+         asserts the two stay in sync.
+         '#privacy' wins over the visited flag: the privacy notice has to stay
+         reachable at a stable URL, so a returning visitor following that link
+         gets the landing rather than a tracker with nothing on it. Mirrored in
+         readInitialOpen() in src/hooks/useLandingPage.ts. */
       (function() {
         try {
-          if (localStorage.getItem('timeforgeVisited') === '1') {
+          if (localStorage.getItem('timeforgeVisited') === '1'
+              && location.hash !== '#privacy') {
             document.documentElement.setAttribute('data-landing', 'hidden');
           }
         } catch(e) {}
@@ -143,9 +148,43 @@
           </p>
         </section>
 
+        <section class="landing__section" id="privacy">
+          <h2 class="landing__section-title">Privacy</h2>
+          <p class="landing__text">
+            Everything you track is written to your own browser's local storage and stays
+            there. Clockflux keeps four entries: <code>timeforge</code> for your sessions and
+            days off, <code>timeforgeSettings</code> for your holiday allowance and start
+            date, <code>hoursFormat</code> for whether you prefer decimal or h:mm, and
+            <code>timeforgeVisited</code> to remember that you have seen this page. None of it
+            is sent anywhere, and there is no account and no server holding a copy — which
+            also means that clearing your browser data for this site erases your history for
+            good.
+          </p>
+          <p class="landing__text">
+            The site uses Vercel Web Analytics to count visits. It records page views and
+            referrers only. It sets no cookies, it does not follow you to other sites, and it
+            never sees the hours you log — that data never leaves your device for it to see.
+            To tell repeat visits apart it derives a hash from your IP address and browser
+            details, which Vercel discards and regenerates each day, so it cannot be used to
+            recognise you over time. That processing rests on our legitimate interest in
+            knowing roughly how many people use Clockflux.
+          </p>
+          <p class="landing__text">
+            There is no cookie banner because there is nothing to ask you about: the site sets
+            no cookies at all, and everything stored on your device is what the tracker needs
+            in order to be a tracker.
+          </p>
+          <p class="landing__text">
+            Questions, or want your analytics data excluded? Email
+            <a href="mailto:privacy@clockflux.app">privacy@clockflux.app</a>.
+          </p>
+          <p class="landing__text"><em>Last updated 6 August 2026.</em></p>
+        </section>
+
         <footer class="landing__footer">
           <p class="landing__text">Ready when you are — this page won't get in your way again.</p>
           <button type="button" class="landing__cta landing__cta--secondary" data-landing-dismiss>Open Clockflux</button>
+          <p class="landing__text"><a href="#privacy">Privacy</a></p>
         </footer>
       </div>
     </div>

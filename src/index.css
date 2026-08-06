@@ -2179,6 +2179,25 @@ input[type="time"]:focus {
   color: var(--text-muted);
 }
 
+/* Every other section is a single block, so .landing__text carries no margin of
+   its own. The privacy notice is the one that runs to several paragraphs. */
+.landing__text + .landing__text { margin-top: 0.75rem; }
+
+/* The default link blue fails against --surface-alt in the dark theme.
+   --accent-in is theme-mixed, so it stays legible in both. */
+.landing__section a,
+.landing__footer a {
+  color: var(--accent-in);
+  text-underline-offset: 0.2em;
+}
+
+.landing__section code {
+  font-size: 0.85em;
+  /* Keys are identifiers — never let one wrap mid-token. */
+  white-space: nowrap;
+  color: var(--text);
+}
+
 .landing__footer {
   margin-top: 2rem;
   display: flex;
