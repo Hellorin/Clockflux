@@ -2,6 +2,7 @@ import type { AuthUser } from '../types'
 import type { AuthRepository } from './types'
 
 const STORAGE_KEY = 'timeforgeUser'
+const ACCESS_TOKEN_STORAGE_KEY = 'timeforgeAccessToken'
 
 export const localStorageAuthRepository: AuthRepository = {
   loadUser(): AuthUser | null {
@@ -23,6 +24,28 @@ export const localStorageAuthRepository: AuthRepository = {
   clearUser(): void {
     try {
       localStorage.removeItem(STORAGE_KEY)
+    } catch {
+      // Nothing to do if storage is unavailable.
+    }
+  },
+  loadAccessToken(): string | null {
+    try {
+      return localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)
+    } catch {
+      return null
+    }
+  },
+  saveAccessToken(accessToken: string): void {
+    try {
+      localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, accessToken)
+    } catch {
+      // Storage unavailable (e.g. Safari private mode). Sign-in still works
+      // for the current session, it just won't survive a reload.
+    }
+  },
+  clearAccessToken(): void {
+    try {
+      localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY)
     } catch {
       // Nothing to do if storage is unavailable.
     }

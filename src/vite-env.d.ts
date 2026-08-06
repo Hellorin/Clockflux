@@ -3,6 +3,14 @@
 interface ImportMetaEnv {
   /** Google OAuth Client ID (public, not a secret) used for Sign in with Google. */
   readonly VITE_GOOGLE_CLIENT_ID?: string
+  /** Base URL of the Timeforge API, e.g. http://localhost:8080. */
+  readonly VITE_API_URL?: string
+  /**
+   * Feature flag gating "Sign in with Google" and everything behind it
+   * (feature-flag fetching, etc). The backend auth flow isn't production-ready
+   * yet, so this defaults to off; set to 'true' to enable it locally.
+   */
+  readonly VITE_ENABLE_AUTH?: string
 }
 
 interface ImportMeta {

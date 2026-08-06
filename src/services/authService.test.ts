@@ -1,41 +1,66 @@
-import { describe, it, expect } from 'vitest'
-import { decodeGoogleCredential } from './authService'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { signInWithGoogle } from './authService'
 
-function makeCredential(claims: Record<string, unknown>): string {
-  const base64url = (obj: unknown) =>
-    btoa(JSON.stringify(obj)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-  return `${base64url({ alg: 'RS256', typ: 'JWT' })}.${base64url(claims)}.signature`
-}
+const STORAGE_KEY = 'timeforgeUser'
+const ACCESS_TOKEN_STORAGE_KEY = 'timeforgeAccessToken'
 
-describe('decodeGoogleCredential', () => {
-  it('extracts name, email, and picture from the token payload', () => {
-    const credential = makeCredential({
-      name: 'Ada Lovelace',
-      email: 'ada@example.com',
-      picture: 'https://example.com/ada.png',
-    })
-    expect(decodeGoogleCredential(credential)).toEqual({
-      name: 'Ada Lovelace',
-      email: 'ada@example.com',
-      picture: 'https://example.com/ada.png',
-    })
+describe('signInWithGoogle', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.stubGlobal('fetch', vi.fn())
   })
 
-  it('falls back to email when name is missing, and empty picture when absent', () => {
-    const credential = makeCredential({ email: 'ada@example.com' })
-    expect(decodeGoogleCredential(credential)).toEqual({
-      name: 'ada@example.com',
-      email: 'ada@example.com',
-      picture: '',
-    })
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
-  it('returns null when the token has no email claim', () => {
-    const credential = makeCredential({ name: 'Ada Lovelace' })
-    expect(decodeGoogleCredential(credential)).toBeNull()
+  it('returns and persists the user and access token from a successful response', async () => {
+    const user = { name: 'Ada Lovelace', email: 'ada@example.com', picture: 'https://example.com/ada.png' }
+    const accessToken = 'access-token-123'
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ user, accessToken }), { status: 200 }))
+
+    const result = await signInWithGoogle('credential-token')
+
+    expect(result).toEqual(user)
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null')).toEqual(user)
+    expect(localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)).toEqual(accessToken)
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/auth/google'),
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'include',
+        body: JSON.stringify({ credential: 'credential-token' }),
+      })
+    )
   })
 
-  it('returns null for a malformed token', () => {
-    expect(decodeGoogleCredential('not-a-jwt')).toBeNull()
+  it('returns null and does not persist anything on a non-OK response', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 401 }))
+
+    const result = await signInWithGoogle('credential-token')
+
+    expect(result).toBeNull()
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+    expect(localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)).toBeNull()
+  })
+
+  it('returns null and does not persist anything when the user object is malformed', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ user: { sub: '123' }, accessToken: 'access-token-123' }), { status: 200 })
+    )
+
+    const result = await signInWithGoogle('credential-token')
+
+    expect(result).toBeNull()
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+    expect(localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)).toBeNull()
+  })
+
+  it('returns null when the network request fails', async () => {
+    vi.mocked(fetch).mockRejectedValue(new Error('network error'))
+
+    const result = await signInWithGoogle('credential-token')
+
+    expect(result).toBeNull()
   })
 })

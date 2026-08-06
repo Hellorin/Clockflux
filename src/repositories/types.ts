@@ -24,4 +24,7 @@ export interface AuthRepository {
   loadUser(): AuthUser | null
   saveUser(user: AuthUser): void
   clearUser(): void
+  loadAccessToken(): string | null
+  saveAccessToken(accessToken: string): void
+  clearAccessToken(): void
 }

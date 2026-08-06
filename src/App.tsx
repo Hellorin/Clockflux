@@ -21,6 +21,8 @@ import type { HoursFormat, Session } from './types'
 
 type View = 'tracker' | 'calendar' | 'holiday' | 'health'
 
+const AUTH_ENABLED = import.meta.env.VITE_ENABLE_AUTH === 'true'
+
 interface SelectedDay {
   dateKey: string
   sessions: Session[]
@@ -66,7 +68,7 @@ export default function App() {
             top-level heading, so the SEO signal stays unambiguous. */}
         <p className="app-title">Clockflux</p>
         <p className="app-date">{formatDateKey(todayKey)}</p>
-        <GoogleSignInButton user={user} onSignIn={signIn} onSignOut={signOut} />
+        {AUTH_ENABLED && <GoogleSignInButton user={user} onSignIn={signIn} onSignOut={signOut} />}
         <button
           ref={aboutBtnRef}
           type="button"
