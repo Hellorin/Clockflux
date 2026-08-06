@@ -90,6 +90,66 @@ body {
 
 .app-about-btn:hover { opacity: 1; }
 
+.app-auth-btn {
+  position: absolute;
+  top: 1.7rem;
+  left: 0;
+  width: 2rem;
+  height: 2rem;
+  overflow: hidden;
+  border-radius: 50%;
+  line-height: 0;
+}
+
+/* Google's injected button markup assumes the browser default box-sizing
+   (content-box): its icon wrapper is 16px wide with 8px of padding on each
+   side, which only adds up to the button's 32px unless padding is additive
+   to width rather than eating into it. Our global `* { box-sizing:
+   border-box }` reset leaks into that third-party markup and collapses it
+   off-center, so restore the default here. */
+.app-auth-btn * {
+  box-sizing: content-box;
+}
+
+/* The Google button's inner logo <svg> ships with a viewBox but no
+   width/height attributes and no CSS rule of its own sizing it, so it
+   renders at 0x0 here. Force it to fill its (correctly sized) parent. */
+.app-auth-btn svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.app-auth-user {
+  position: absolute;
+  top: 2rem;
+  left: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.app-auth-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-auth-avatar--fallback {
+  background: var(--surface-alt);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
 .app-title {
   margin: 0;
   font-size: 1.8rem;

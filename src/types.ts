@@ -32,3 +32,9 @@ export interface Settings {
   employmentStartDate: string | null
   holidayAccrualMode: HolidayAccrualMode
 }
+
+export interface AuthUser {
+  name: string
+  email: string
+  picture: string
+}

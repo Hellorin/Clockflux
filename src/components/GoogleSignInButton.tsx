@@ -1,0 +1,86 @@
+import { useEffect, useRef } from 'react'
+import type { AuthUser } from '../types'
+
+const GIS_SCRIPT_SRC = 'https://accounts.google.com/gsi/client'
+const GIS_SCRIPT_ID = 'google-identity-services'
+
+interface GoogleCredentialResponse {
+  credential: string
+}
+
+interface GoogleAccountsId {
+  initialize(config: { client_id: string; callback: (response: GoogleCredentialResponse) => void }): void
+  renderButton(parent: HTMLElement, options: Record<string, unknown>): void
+}
+
+declare global {
+  interface Window {
+    google?: { accounts: { id: GoogleAccountsId } }
+  }
+}
+
+function loadGisScript(onReady: () => void) {
+  const existing = document.getElementById(GIS_SCRIPT_ID) as HTMLScriptElement | null
+  if (existing) {
+    if (window.google?.accounts?.id) onReady()
+    else existing.addEventListener('load', onReady, { once: true })
+    return
+  }
+  const script = document.createElement('script')
+  script.id = GIS_SCRIPT_ID
+  script.src = GIS_SCRIPT_SRC
+  script.async = true
+  script.defer = true
+  script.addEventListener('load', onReady, { once: true })
+  document.head.appendChild(script)
+}
+
+interface GoogleSignInButtonProps {
+  user: AuthUser | null
+  onSignIn: (credential: string) => void
+  onSignOut: () => void
+}
+
+export default function GoogleSignInButton({ user, onSignIn, onSignOut }: GoogleSignInButtonProps) {
+  const buttonRef = useRef<HTMLDivElement>(null)
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+
+  useEffect(() => {
+    if (user || !clientId || !buttonRef.current) return
+    const container = buttonRef.current
+    loadGisScript(() => {
+      const accountsId = window.google?.accounts?.id
+      if (!accountsId || !container.isConnected) return
+      // Strict Mode runs effects twice in dev; clear out any button rendered
+      // by a prior run so this container never ends up with two stacked on
+      // top of each other.
+      container.innerHTML = ''
+      accountsId.initialize({
+        client_id: clientId,
+        callback: response => onSignIn(response.credential),
+      })
+      accountsId.renderButton(container, { type: 'icon', theme: 'outline', size: 'medium', shape: 'circle' })
+    })
+  }, [user, clientId, onSignIn])
+
+  if (!clientId) return null
+
+  if (user) {
+    return (
+      <button
+        type="button"
+        className="app-auth-user"
+        onClick={onSignOut}
+        title={`Signed in as ${user.email} — click to sign out`}
+      >
+        {user.picture ? (
+          <img className="app-auth-avatar" src={user.picture} alt="" referrerPolicy="no-referrer" />
+        ) : (
+          <span className="app-auth-avatar app-auth-avatar--fallback">{user.name.charAt(0).toUpperCase()}</span>
+        )}
+      </button>
+    )
+  }
+
+  return <div ref={buttonRef} className="app-auth-btn" />
+}

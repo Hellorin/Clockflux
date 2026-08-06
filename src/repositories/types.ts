@@ -1,4 +1,4 @@
-import type { Settings, TimeEntriesData } from '../types'
+import type { AuthUser, Settings, TimeEntriesData } from '../types'
 
 export interface TimeEntriesRepository {
   load(): TimeEntriesData | null
@@ -18,4 +18,10 @@ export interface PreferencesRepository {
 export interface VisitRepository {
   hasVisited(): boolean
   markVisited(): void
+}
+
+export interface AuthRepository {
+  loadUser(): AuthUser | null
+  saveUser(user: AuthUser): void
+  clearUser(): void
 }

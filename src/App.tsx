@@ -3,6 +3,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useTimeTracker } from './hooks/useTimeTracker'
 import { useAppSettings } from './hooks/useAppSettings'
 import { useLandingPage } from './hooks/useLandingPage'
+import { useAuth } from './hooks/useAuth'
+import GoogleSignInButton from './components/GoogleSignInButton'
 import SlideToggle from './components/SlideToggle'
 import LiveTimer from './components/LiveTimer'
 import TodaySummary from './components/TodaySummary'
@@ -33,6 +35,7 @@ export default function App() {
   const [celebrationMilestone, setCelebrationMilestone] = useState<Milestone | null>(null)
   const aboutBtnRef = useRef<HTMLButtonElement>(null)
   const { isLandingOpen, openLanding } = useLandingPage({ returnFocusRef: aboutBtnRef })
+  const { user, signIn, signOut } = useAuth()
 
   useEffect(() => {
     setMilestoneCallback(type => setCelebrationMilestone(type))
@@ -63,6 +66,7 @@ export default function App() {
             top-level heading, so the SEO signal stays unambiguous. */}
         <p className="app-title">Clockflux</p>
         <p className="app-date">{formatDateKey(todayKey)}</p>
+        <GoogleSignInButton user={user} onSignIn={signIn} onSignOut={signOut} />
         <button
           ref={aboutBtnRef}
           type="button"
