@@ -12,7 +12,6 @@ export default function LiveTimer({ isCheckedIn, todaySessions }: LiveTimerProps
 
   useEffect(() => {
     if (!isCheckedIn) return
-    setNow(Date.now())
     const id = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(id)
   }, [isCheckedIn])

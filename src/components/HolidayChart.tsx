@@ -21,7 +21,7 @@ const CH = H - PAD.t - PAD.b
 const LEGEND_Y = 8
 
 export default function HolidayChart({ daysOff, allowance, startDate, accrualMode }: HolidayChartProps) {
-  const today = new Date()
+  const today = useMemo(() => new Date(), [])
   const year = today.getFullYear()
   const currentM = today.getMonth()
 
