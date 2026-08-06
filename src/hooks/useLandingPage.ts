@@ -11,6 +11,16 @@ const DISMISS_SELECTOR = '[data-landing-dismiss]'
 const HIDDEN = 'hidden'
 const VISIBLE = 'visible'
 
+// The privacy notice lives inside the landing page, so it needs a way in that
+// survives the visited flag. The pre-paint script in index.html checks the same
+// hash — the two have to agree or the landing flashes and then closes.
+const PRIVACY_HASH = '#privacy'
+const PRIVACY_ELEMENT_ID = 'privacy'
+
+function isPrivacyDeepLink(): boolean {
+  return window.location.hash === PRIVACY_HASH
+}
+
 export interface UseLandingPageOptions {
   /** Focused when the landing closes and nothing was focused before it opened. */
   returnFocusRef?: RefObject<HTMLElement | null>
@@ -31,6 +41,9 @@ function readInitialOpen(): boolean {
   // document, and the hook stays inert there.
   if (!getLandingElement()) return false
   if (window.__clockfluxLandingDismissed) return false
+  // A link straight to the privacy notice opens the landing whatever the visited
+  // flag says. Ahead of both checks below, since either would close it again.
+  if (isPrivacyDeepLink()) return true
   // Honour the decision the pre-paint script in index.html already made, so we
   // never re-open something that has already been hidden without a flash...
   if (document.documentElement.dataset.landing === HIDDEN) return false
@@ -45,6 +58,9 @@ export function useLandingPage(options: UseLandingPageOptions = {}): LandingPage
   const [isLandingOpen, setIsLandingOpen] = useState(readInitialOpen)
   const lastFocusedRef = useRef<HTMLElement | null>(null)
   const hasSyncedRef = useRef(false)
+  // Set only where we open *because of* the privacy link, so opening from the
+  // header still lands on the hero even with the hash left in the address bar.
+  const pendingPrivacyScrollRef = useRef(isLandingOpen && isPrivacyDeepLink())
 
   const openLanding = useCallback(() => setIsLandingOpen(true), [])
   const closeLanding = useCallback(() => setIsLandingOpen(false), [])
@@ -66,6 +82,21 @@ export function useLandingPage(options: UseLandingPageOptions = {}): LandingPage
     if (window.__clockfluxLandingDismissed) setIsLandingOpen(false)
   }, [])
 
+  // Following a #privacy link from inside the tracker is a same-document
+  // navigation: nothing re-mounts and readInitialOpen never runs again, so
+  // without this the URL would change and the notice would stay hidden.
+  useEffect(() => {
+    function handleHashChange() {
+      if (!isPrivacyDeepLink()) return
+      // Already showing — leave the browser's own fragment scroll to it.
+      if (document.documentElement.dataset.landing === VISIBLE) return
+      pendingPrivacyScrollRef.current = true
+      setIsLandingOpen(true)
+    }
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
   useEffect(() => {
     const landingEl = getLandingElement()
     if (!landingEl) return
@@ -82,6 +113,13 @@ export function useLandingPage(options: UseLandingPageOptions = {}): LandingPage
           active instanceof HTMLElement && active !== document.body ? active : null
       }
       landingEl.focus()
+      // That focus() call put the scroll back at the top, taking the browser's
+      // native fragment jump with it, so redo it here for the one case that
+      // asked for it.
+      if (pendingPrivacyScrollRef.current) {
+        pendingPrivacyScrollRef.current = false
+        document.getElementById(PRIVACY_ELEMENT_ID)?.scrollIntoView()
+      }
     } else if (!isInitialRun) {
       // Never leave focus on the element we just hid.
       const target = lastFocusedRef.current ?? returnFocusRef?.current ?? null

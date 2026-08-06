@@ -16,3 +16,7 @@ afterEach(() => {
 vi.mock('canvas-confetti', () => ({
   default: vi.fn(),
 }))
+
+// jsdom has no layout engine and so ships no scrollIntoView at all. Every real
+// browser has it; without this stub the privacy deep link throws on open.
+Element.prototype.scrollIntoView = vi.fn()

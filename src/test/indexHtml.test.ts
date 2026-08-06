@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { VISIT_STORAGE_KEY } from '../repositories/localStorageVisitRepository'
+import { STORAGE_KEY as TIME_ENTRIES_STORAGE_KEY } from '../repositories/localStorageTimeEntriesRepository'
+import { STORAGE_KEY as SETTINGS_STORAGE_KEY } from '../repositories/localStorageSettingsRepository'
+import { STORAGE_KEY as PREFERENCES_STORAGE_KEY } from '../repositories/localStoragePreferencesRepository'
 // Vite's ?raw loader, so this needs no node typings.
 import html from '../../index.html?raw'
 import robots from '../../public/robots.txt?raw'
@@ -47,6 +50,33 @@ describe('index.html', () => {
     expect(parsed['@type']).toBe('WebApplication')
     expect(parsed.url).toBe(CANONICAL)
     expect(parsed.featureList.length).toBeGreaterThan(0)
+  })
+
+  it('names every storage key the app writes', () => {
+    // Imported rather than spelled out, so renaming a key fails here instead of
+    // leaving the notice quietly describing storage that no longer exists.
+    for (const key of [
+      TIME_ENTRIES_STORAGE_KEY,
+      SETTINGS_STORAGE_KEY,
+      PREFERENCES_STORAGE_KEY,
+      VISIT_STORAGE_KEY,
+    ]) {
+      expect(html).toContain(`<code>${key}</code>`)
+    }
+  })
+
+  it('discloses the analytics and the absence of cookies', () => {
+    // The one thing on the page that talks to a third party — GDPR Art. 13 is
+    // why the notice exists at all.
+    expect(html).toMatch(/Vercel Web Analytics/)
+    expect(html).toMatch(/sets no cookies/i)
+  })
+
+  it('keeps the pre-paint script in step with the privacy deep link', () => {
+    // Mirrors isPrivacyDeepLink() in src/hooks/useLandingPage.ts. If the script
+    // hides the landing regardless of the hash, the notice becomes unreachable
+    // for everyone who has already used the app.
+    expect(html).toMatch(/location\.hash !== '#privacy'/)
   })
 
   it('keeps the indexable copy that the page exists for', () => {

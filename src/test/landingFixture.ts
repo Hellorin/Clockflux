@@ -6,6 +6,7 @@
 export const LANDING_FIXTURE_HTML = `
   <div id="landing" class="landing" role="region" tabindex="-1">
     <button type="button" id="landing-cta" data-landing-dismiss>Start tracking</button>
+    <section id="privacy"></section>
   </div>
 `
 
