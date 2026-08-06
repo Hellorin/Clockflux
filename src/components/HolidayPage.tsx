@@ -36,12 +36,11 @@ export default function HolidayPage({ used, daysOff, allowance, onAllowanceChang
 
 function HolidayBalanceCard({ used, daysOff, allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange }: HolidayPageProps) {
   const [showSettings, setShowSettings] = useState(false)
-  const today = new Date()
-  const year = today.getFullYear()
+  const year = useMemo(() => new Date().getFullYear(), [])
   const todayKey = getTodayKey()
 
   const proratedAllowance = getProratedAllowance(startDate, allowance, year)
-  const accrued = getAccruedDays(startDate, allowance, today, accrualMode)
+  const accrued = getAccruedDays(startDate, allowance, new Date(), accrualMode)
   const isProrated = startDate && proratedAllowance !== allowance
   const available = accrued - used
   const overspent = available < 0
