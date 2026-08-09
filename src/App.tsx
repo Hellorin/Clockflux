@@ -37,12 +37,16 @@ export default function App() {
   const [celebrationMilestone, setCelebrationMilestone] = useState<Milestone | null>(null)
   const aboutBtnRef = useRef<HTMLButtonElement>(null)
   const { isLandingOpen, openLanding } = useLandingPage({ returnFocusRef: aboutBtnRef })
-  const { user, signIn, signOut } = useAuth()
+  const { user, features, signIn, signOut } = useAuth()
 
   useEffect(() => {
     setMilestoneCallback(type => setCelebrationMilestone(type))
     return () => setMilestoneCallback(null)
   }, [setMilestoneCallback])
+
+  useEffect(() => {
+    console.log('[features]', features)
+  }, [features])
 
   useEffect(() => {
     document.documentElement.dataset.theme = isCheckedIn ? 'light' : 'dark'
