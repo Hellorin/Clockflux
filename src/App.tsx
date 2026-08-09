@@ -22,6 +22,10 @@ import type { HoursFormat, Session } from './types'
 type View = 'tracker' | 'calendar' | 'holiday' | 'health'
 
 const AUTH_ENABLED = import.meta.env.VITE_ENABLE_AUTH === 'true'
+// Master switch for paid-only functionality. Nothing is paid-gated yet, but
+// this is the flag future paid tabs/features should check, and it's what
+// login is gated on below — signing in only exists to unlock paid features.
+const PAID_FEATURES_ENABLED = import.meta.env.VITE_ENABLE_PAID_FEATURES === 'true'
 
 interface SelectedDay {
   dateKey: string
@@ -77,7 +81,7 @@ export default function App() {
             top-level heading, so the SEO signal stays unambiguous. */}
         <p className="app-title">Clockflux</p>
         <p className="app-date">{formatDateKey(todayKey)}</p>
-        {AUTH_ENABLED && <GoogleSignInButton user={user} onSignIn={signIn} onSignOut={signOut} />}
+        {AUTH_ENABLED && PAID_FEATURES_ENABLED && <GoogleSignInButton user={user} onSignIn={signIn} onSignOut={signOut} />}
         <button
           ref={aboutBtnRef}
           type="button"
