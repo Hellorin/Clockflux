@@ -11,6 +11,12 @@ interface ImportMetaEnv {
    * yet, so this defaults to off; set to 'true' to enable it locally.
    */
   readonly VITE_ENABLE_AUTH?: string
+  /**
+   * Master switch for paid-only features. Off by default until paid features
+   * actually ship. Login is only shown when this and VITE_ENABLE_AUTH are
+   * both 'true', since signing in exists solely to unlock paid features.
+   */
+  readonly VITE_ENABLE_PAID_FEATURES?: string
 }
 
 interface ImportMeta {
