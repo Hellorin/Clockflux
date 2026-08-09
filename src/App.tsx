@@ -38,6 +38,11 @@ export default function App() {
   const aboutBtnRef = useRef<HTMLButtonElement>(null)
   const { isLandingOpen, openLanding } = useLandingPage({ returnFocusRef: aboutBtnRef })
   const { user, features, signIn, signOut } = useAuth()
+  const enabledViews = new Set(features.map(feature => feature.key))
+  // If the active tab's feature gets disabled out from under the user (e.g.
+  // after sign-out drops an authenticated-only feature), fall back to the
+  // first tab that's still enabled rather than rendering a dead tab.
+  const activeView = enabledViews.has(view) ? view : ((features[0]?.key as View | undefined) ?? view)
 
   useEffect(() => {
     setMilestoneCallback(type => setCelebrationMilestone(type))
@@ -86,7 +91,7 @@ export default function App() {
       </header>
 
       <main className="app-main">
-        {view === 'tracker' && (
+        {activeView === 'tracker' && (
           <>
             <SlideToggle
               isCheckedIn={isCheckedIn}
@@ -100,7 +105,7 @@ export default function App() {
             <HistoryList allDays={allDays} todayKey={todayKey} hoursFormat={hoursFormat} daysOff={daysOff} />
           </>
         )}
-        {view === 'calendar' && (
+        {activeView === 'calendar' && (
           <CalendarView
             allDays={allDays}
             daysOff={daysOff}
@@ -108,7 +113,7 @@ export default function App() {
             onBulkSetDaysOffType={setDaysOffTypeBulk}
           />
         )}
-        {view === 'holiday' && (
+        {activeView === 'holiday' && (
           <HolidayPage
             used={personalDaysUsedThisYear}
             daysOff={daysOff}
@@ -120,7 +125,7 @@ export default function App() {
             onAccrualModeChange={setHolidayAccrualMode}
           />
         )}
-        {view === 'health' && (
+        {activeView === 'health' && (
           <HealthPage
             stats={stats}
             allDays={allDays}
@@ -142,38 +147,46 @@ export default function App() {
       )}
 
       <nav className="tab-bar">
-        <button
-          type="button"
-          className={`tab-btn${view === 'tracker' ? ' tab-btn--active' : ''}`}
-          onClick={() => setView('tracker')}
-        >
-          <span className="tab-icon">⏱️</span>
-          <span className="tab-label">Track</span>
-        </button>
-        <button
-          type="button"
-          className={`tab-btn${view === 'calendar' ? ' tab-btn--active' : ''}`}
-          onClick={() => setView('calendar')}
-        >
-          <span className="tab-icon">📅</span>
-          <span className="tab-label">Calendar</span>
-        </button>
-        <button
-          type="button"
-          className={`tab-btn${view === 'holiday' ? ' tab-btn--active' : ''}`}
-          onClick={() => setView('holiday')}
-        >
-          <span className="tab-icon">🏖️</span>
-          <span className="tab-label">Holiday</span>
-        </button>
-        <button
-          type="button"
-          className={`tab-btn${view === 'health' ? ' tab-btn--active' : ''}`}
-          onClick={() => setView('health')}
-        >
-          <span className="tab-icon">🫀</span>
-          <span className="tab-label">Health</span>
-        </button>
+        {enabledViews.has('tracker') && (
+          <button
+            type="button"
+            className={`tab-btn${activeView === 'tracker' ? ' tab-btn--active' : ''}`}
+            onClick={() => setView('tracker')}
+          >
+            <span className="tab-icon">⏱️</span>
+            <span className="tab-label">Track</span>
+          </button>
+        )}
+        {enabledViews.has('calendar') && (
+          <button
+            type="button"
+            className={`tab-btn${activeView === 'calendar' ? ' tab-btn--active' : ''}`}
+            onClick={() => setView('calendar')}
+          >
+            <span className="tab-icon">📅</span>
+            <span className="tab-label">Calendar</span>
+          </button>
+        )}
+        {enabledViews.has('holiday') && (
+          <button
+            type="button"
+            className={`tab-btn${activeView === 'holiday' ? ' tab-btn--active' : ''}`}
+            onClick={() => setView('holiday')}
+          >
+            <span className="tab-icon">🏖️</span>
+            <span className="tab-label">Holiday</span>
+          </button>
+        )}
+        {enabledViews.has('health') && (
+          <button
+            type="button"
+            className={`tab-btn${activeView === 'health' ? ' tab-btn--active' : ''}`}
+            onClick={() => setView('health')}
+          >
+            <span className="tab-icon">🫀</span>
+            <span className="tab-label">Health</span>
+          </button>
+        )}
       </nav>
     </div>
     <Analytics />
