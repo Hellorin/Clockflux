@@ -26,6 +26,7 @@ export interface TimeEntriesData {
 
 export type HolidayAccrualMode = 'gradual' | 'immediate'
 export type HoursFormat = 'decimal' | 'hhmm'
+export type CookieConsentChoice = 'accepted' | 'refused'
 
 export interface Settings {
   annualHolidayAllowance: number

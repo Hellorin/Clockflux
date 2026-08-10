@@ -1388,6 +1388,80 @@ input[type="time"]:focus {
   color: var(--text-muted);
 }
 
+/* ─── Cookie Consent Banner ──────────────────────────────────────────────── */
+.cookie-consent {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Above .tab-bar (100) so it reads as the frontmost thing until decided,
+     but below .health-guide-overlay/.celebration-overlay/.landing. */
+  z-index: 150;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem 1.25rem;
+  padding: 1rem 1.25rem calc(1rem + env(safe-area-inset-bottom));
+  background: var(--surface-alt);
+  border-top: 1px solid color-mix(in srgb, transparent, var(--text-muted) 40%);
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.25);
+  animation: cookie-consent-pop-in 0.3s ease;
+}
+
+@keyframes cookie-consent-pop-in {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.cookie-consent__text {
+  flex: 1 1 320px;
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.cookie-consent__text a {
+  color: var(--accent-in);
+  text-underline-offset: 0.2em;
+}
+
+.cookie-consent__actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.6rem;
+}
+
+.cookie-consent__btn {
+  padding: 0.6rem 1.4rem;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.15s ease, box-shadow 0.35s ease;
+}
+
+.cookie-consent__btn:hover { transform: translateY(-1px); }
+
+.cookie-consent__btn:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, #2dd4bf 60%, #4ade80);
+}
+
+.cookie-consent__btn--accept {
+  background: var(--brand-gradient);
+  color: var(--bg);
+}
+
+.cookie-consent__btn--refuse {
+  background: transparent;
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+
 /* ─── Empty state (used by Health page) ─────────────────────────────────── */
 .stats-empty {
   text-align: center;

@@ -95,4 +95,37 @@ describe('App', () => {
       expect(document.querySelector('.app')).not.toHaveAttribute('inert')
     })
   })
+
+  describe('cookie consent banner', () => {
+    it('shows on first visit and hides once accepted, persisting the choice', () => {
+      render(<App />)
+      expect(screen.getByRole('region', { name: 'Cookie preferences' })).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Accept' }))
+      expect(screen.queryByRole('region', { name: 'Cookie preferences' })).not.toBeInTheDocument()
+      expect(localStorage.getItem('cookieConsent')).toBe('accepted')
+    })
+
+    it('hides once refused, persisting the choice', () => {
+      render(<App />)
+      fireEvent.click(screen.getByRole('button', { name: 'Refuse' }))
+      expect(screen.queryByRole('region', { name: 'Cookie preferences' })).not.toBeInTheDocument()
+      expect(localStorage.getItem('cookieConsent')).toBe('refused')
+    })
+
+    it('stays hidden on a later visit once a choice was already made', () => {
+      localStorage.setItem('cookieConsent', 'accepted')
+      render(<App />)
+      expect(screen.queryByRole('region', { name: 'Cookie preferences' })).not.toBeInTheDocument()
+    })
+
+    it('stays hidden behind the landing page and reappears once it closes', () => {
+      const landing = mountLandingFixture()
+      render(<App />)
+      expect(screen.queryByRole('region', { name: 'Cookie preferences' })).not.toBeInTheDocument()
+
+      fireEvent.click(landing.querySelector('[data-landing-dismiss]')!)
+      expect(screen.getByRole('region', { name: 'Cookie preferences' })).toBeInTheDocument()
+    })
+  })
 })

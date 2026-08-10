@@ -5,4 +5,4 @@
 // timeTrackingService.ts, settingsService.ts, preferencesService.ts,
 // visitService.ts) — never picked here and never called directly by a hook or
 // component.
-export type { TimeEntriesRepository, SettingsRepository, PreferencesRepository, VisitRepository, AuthRepository } from './types'
+export type { TimeEntriesRepository, SettingsRepository, PreferencesRepository, VisitRepository, AuthRepository, CookieConsentRepository } from './types'

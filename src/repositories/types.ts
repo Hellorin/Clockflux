@@ -1,4 +1,4 @@
-import type { AuthUser, Settings, TimeEntriesData } from '../types'
+import type { AuthUser, CookieConsentChoice, Settings, TimeEntriesData } from '../types'
 
 export interface TimeEntriesRepository {
   load(): TimeEntriesData | null
@@ -27,4 +27,9 @@ export interface AuthRepository {
   loadAccessToken(): string | null
   saveAccessToken(accessToken: string): void
   clearAccessToken(): void
+}
+
+export interface CookieConsentRepository {
+  loadConsent(): CookieConsentChoice | null
+  saveConsent(value: CookieConsentChoice): void
 }

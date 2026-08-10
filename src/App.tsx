@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useTimeTracker } from './hooks/useTimeTracker'
 import { useAppSettings } from './hooks/useAppSettings'
 import { useLandingPage } from './hooks/useLandingPage'
+import { useCookieConsent } from './hooks/useCookieConsent'
 import { useAuth } from './hooks/useAuth'
 import GoogleSignInButton from './components/GoogleSignInButton'
 import SlideToggle from './components/SlideToggle'
@@ -12,6 +13,7 @@ import HistoryList from './components/HistoryList'
 import CalendarView from './components/CalendarView'
 import DayEditModal from './components/DayEditModal'
 import CelebrationOverlay from './components/CelebrationOverlay'
+import CookieConsentBanner from './components/CookieConsentBanner'
 import HealthPage from './components/HealthPage'
 import HolidayPage from './components/HolidayPage'
 import { formatDateKey } from './utils/time'
@@ -41,6 +43,7 @@ export default function App() {
   const [celebrationMilestone, setCelebrationMilestone] = useState<Milestone | null>(null)
   const aboutBtnRef = useRef<HTMLButtonElement>(null)
   const { isLandingOpen, openLanding } = useLandingPage({ returnFocusRef: aboutBtnRef })
+  const { consent, accept: acceptCookies, refuse: refuseCookies } = useCookieConsent()
   const { user, features, signIn, signOut } = useAuth()
   const enabledViews = new Set(features.map(feature => feature.key))
   // If the active tab's feature gets disabled out from under the user (e.g.
@@ -150,6 +153,10 @@ export default function App() {
         />
       )}
 
+      {consent === null && !isLandingOpen && (
+        <CookieConsentBanner onAccept={acceptCookies} onRefuse={refuseCookies} />
+      )}
+
       <nav className="tab-bar">
         {enabledViews.has('tracker') && (
           <button
@@ -193,7 +200,7 @@ export default function App() {
         )}
       </nav>
     </div>
-    <Analytics />
+    {consent === 'accepted' && <Analytics />}
     </>
   )
 }

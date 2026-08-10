@@ -116,33 +116,40 @@
           <h2 class="landing__section-title">Privacy</h2>
           <p class="landing__text">
             Everything you track is written to your own browser's local storage and stays
-            there. Clockflux keeps four entries: <code>timeforge</code> for your sessions and
+            there. Clockflux keeps five entries: <code>timeforge</code> for your sessions and
             days off, <code>timeforgeSettings</code> for your holiday allowance and start
-            date, <code>hoursFormat</code> for whether you prefer decimal or h:mm, and
-            <code>timeforgeVisited</code> to remember that you have seen this page. None of it
-            is sent anywhere, and there is no account and no server holding a copy — which
-            also means that clearing your browser data for this site erases your history for
-            good.
+            date, <code>hoursFormat</code> for whether you prefer decimal or h:mm,
+            <code>timeforgeVisited</code> to remember that you have seen this page, and
+            <code>cookieConsent</code> to remember your answer to the cookie banner below.
+            None of it is sent anywhere, and there is no account and no server holding a copy
+            — which also means that clearing your browser data for this site erases your
+            history for good.
           </p>
           <p class="landing__text">
-            The site uses Vercel Web Analytics to count visits. It records page views and
+            The site can use Vercel Web Analytics to count visits. It records page views and
             referrers only. It sets no cookies, it does not follow you to other sites, and it
             never sees the hours you log — that data never leaves your device for it to see.
             To tell repeat visits apart it derives a hash from your IP address and browser
             details, which Vercel discards and regenerates each day, so it cannot be used to
-            recognise you over time. That processing rests on our legitimate interest in
-            knowing roughly how many people use Clockflux.
+            recognise you over time.
           </p>
           <p class="landing__text">
-            There is no cookie banner because there is nothing to ask you about: the site sets
-            no cookies at all, and everything stored on your device is what the tracker needs
-            in order to be a tracker.
+            Even though analytics itself sets no cookies, we ask before it loads: the first
+            time you open Clockflux a banner offers Accept or Refuse. Accepting lets analytics
+            load for that visit; refusing keeps it switched off. Either choice is remembered
+            locally as <code>cookieConsent</code> so you are not asked again, and you can
+            revisit this notice at any time to see exactly what that choice does.
+          </p>
+          <p class="landing__text">
+            Signing in with Google, where that feature is enabled, sets one additional
+            first-party session cookie so the browser stays signed in. That cookie is strictly
+            necessary for sign-in to work and is only ever set if you choose to sign in.
           </p>
           <p class="landing__text">
             Questions, or want your analytics data excluded? Email
             <a href="mailto:info@clockflux.app">info@clockflux.app</a>.
           </p>
-          <p class="landing__text"><em>Last updated 6 August 2026.</em></p>
+          <p class="landing__text"><em>Last updated 10 August 2026.</em></p>
         </section>
 
         <footer class="landing__footer">
