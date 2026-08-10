@@ -1,5 +1,5 @@
 import { Analytics } from "@vercel/analytics/react"
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTimeTracker } from './hooks/useTimeTracker'
 import { useAppSettings } from './hooks/useAppSettings'
 import { useLandingPage } from './hooks/useLandingPage'
@@ -42,6 +42,15 @@ export default function App() {
   const aboutBtnRef = useRef<HTMLButtonElement>(null)
   const { isLandingOpen, openLanding } = useLandingPage({ returnFocusRef: aboutBtnRef })
   const { user, features, signIn, signOut } = useAuth()
+  // After a successful sign-in, land the user back on the tracker (home)
+  // view regardless of which tab they were on when they signed in.
+  const handleSignIn = useCallback(
+    async (credential: string) => {
+      const signedInUser = await signIn(credential)
+      if (signedInUser) setView('tracker')
+    },
+    [signIn]
+  )
   const enabledViews = new Set(features.map(feature => feature.key))
   // If the active tab's feature gets disabled out from under the user (e.g.
   // after sign-out drops an authenticated-only feature), fall back to the
@@ -81,7 +90,7 @@ export default function App() {
             top-level heading, so the SEO signal stays unambiguous. */}
         <p className="app-title">Clockflux</p>
         <p className="app-date">{formatDateKey(todayKey)}</p>
-        {AUTH_ENABLED && PAID_FEATURES_ENABLED && <GoogleSignInButton user={user} onSignIn={signIn} onSignOut={signOut} />}
+        {AUTH_ENABLED && PAID_FEATURES_ENABLED && <GoogleSignInButton user={user} onSignIn={handleSignIn} onSignOut={signOut} />}
         <button
           ref={aboutBtnRef}
           type="button"

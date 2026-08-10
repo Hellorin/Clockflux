@@ -18,13 +18,14 @@ export function useAuth() {
 
   const signIn = useCallback(async (credential: string) => {
     const user = await authService.signInWithGoogle(credential)
-    if (!user) return
+    if (!user) return null
     setUser(user)
 
     const accessToken = authService.loadAccessToken()
-    if (!accessToken) return
+    if (!accessToken) return user
     const featuresResponse = await getFeaturesOrDefault(accessToken)
     setFeatures(featuresResponse)
+    return user
   }, [])
 
   const signOut = useCallback(() => {
