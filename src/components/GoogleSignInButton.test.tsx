@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render } from '@testing-library/react'
 import { act } from '@testing-library/react'
 import GoogleSignInButton from './GoogleSignInButton'
@@ -11,9 +11,17 @@ function flushGisScriptLoad() {
 }
 
 describe('GoogleSignInButton', () => {
+  beforeEach(() => {
+    // The component early-returns without loading GIS at all when this is
+    // unset — stub it explicitly rather than relying on whatever's in the
+    // ambient environment (e.g. CI has no .env file, unlike local dev).
+    vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'test-client-id')
+  })
+
   afterEach(() => {
     document.getElementById(GIS_SCRIPT_ID)?.remove()
     delete (window as { google?: unknown }).google
+    vi.unstubAllEnvs()
   })
 
   it('initializes Google Identity Services in redirect mode, pointed at the backend callback', async () => {
