@@ -4,6 +4,7 @@ import { useTimeTracker } from './hooks/useTimeTracker'
 import { useAppSettings } from './hooks/useAppSettings'
 import { useLandingPage } from './hooks/useLandingPage'
 import { useAuth } from './hooks/useAuth'
+import { useSync } from './hooks/useSync'
 import GoogleSignInButton from './components/GoogleSignInButton'
 import SlideToggle from './components/SlideToggle'
 import LiveTimer from './components/LiveTimer'
@@ -34,7 +35,7 @@ interface SelectedDay {
 }
 
 export default function App() {
-  const { isCheckedIn, checkIn, checkOut, todaySessions, todayKey, allDays, setDaySessions, daysOff, setDayOffType, setDaysOffTypeBulk, isTodayOff, todayTargetMs, personalDaysUsedThisYear, setMilestoneCallback, weekTargetMs, weekTotalOtherDaysMs, allPastWorkdayOvertimeMs, stats } = useTimeTracker()
+  const { isCheckedIn, checkIn, checkOut, todaySessions, todayKey, allDays, setDaySessions, days, daysOff, setDayOffType, setDaysOffTypeBulk, isTodayOff, todayTargetMs, personalDaysUsedThisYear, setMilestoneCallback, weekTargetMs, weekTotalOtherDaysMs, allPastWorkdayOvertimeMs, stats } = useTimeTracker()
   const { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode } = useAppSettings()
   const [view, setView] = useState<View>('tracker')
   const [selectedDay, setSelectedDay] = useState<SelectedDay | null>(null)
@@ -44,6 +45,8 @@ export default function App() {
   const { isLandingOpen, openLanding } = useLandingPage({ returnFocusRef: aboutBtnRef })
   const { user, features, signIn, signOut } = useAuth()
   const enabledViews = new Set(features.map(feature => feature.key))
+  const syncEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('cloud-sync')
+  const { lastSyncedAt, isSyncing, syncNow } = useSync({ enabled: syncEnabled, days, daysOff, settings })
   // If the active tab's feature gets disabled out from under the user (e.g.
   // after sign-out drops an authenticated-only feature), fall back to the
   // first tab that's still enabled rather than rendering a dead tab. Settings
@@ -144,6 +147,10 @@ export default function App() {
             onStartDateChange={setEmploymentStartDate}
             accrualMode={settings.holidayAccrualMode}
             onAccrualModeChange={setHolidayAccrualMode}
+            showSync={syncEnabled}
+            lastSyncedAt={lastSyncedAt}
+            isSyncing={isSyncing}
+            onSyncNow={() => syncNow(true)}
           />
         )}
       </main>

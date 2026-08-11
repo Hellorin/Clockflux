@@ -112,6 +112,7 @@ export function useTimeTracker() {
     todayKey,
     allDays,
     setDaySessions,
+    days: data.days,
     daysOff: data.daysOff,
     setDayOffType,
     setDaysOffTypeBulk,

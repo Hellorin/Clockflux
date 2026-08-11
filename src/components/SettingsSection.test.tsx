@@ -26,4 +26,17 @@ describe('SettingsSection', () => {
     )
     expect(screen.getByText('Section content')).toBeInTheDocument()
   })
+
+  it('is always expanded and has no toggle when collapsible is false', () => {
+    render(
+      <SettingsSection title="Sync" collapsible={false}>
+        <p>Section content</p>
+      </SettingsSection>
+    )
+    expect(screen.getByText('Section content')).toBeInTheDocument()
+
+    expect(screen.queryByRole('button', { name: 'Sync' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByText('Sync'))
+    expect(screen.getByText('Section content')).toBeInTheDocument()
+  })
 })

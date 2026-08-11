@@ -20,7 +20,8 @@ function isAuthUser(value: unknown): value is AuthUser {
   return (
     typeof candidate.name === 'string' &&
     typeof candidate.email === 'string' &&
-    typeof candidate.picture === 'string'
+    typeof candidate.picture === 'string' &&
+    (candidate.plan === 'free' || candidate.plan === 'pro')
   )
 }
 
