@@ -13,6 +13,8 @@ describe('useAppSettings', () => {
       annualHolidayAllowance: 25,
       employmentStartDate: null,
       holidayAccrualMode: 'gradual',
+      themeLightColor: null,
+      themeDarkColor: null,
     })
   })
 
@@ -63,5 +65,20 @@ describe('useAppSettings', () => {
 
     act(() => result.current.setHolidayAccrualMode('bogus'))
     expect(result.current.settings.holidayAccrualMode).toBe('gradual')
+  })
+
+  it('sets valid theme colors and rejects malformed ones', () => {
+    const { result } = renderHook(() => useAppSettings())
+    act(() => result.current.setThemeLightColor('#fffbf5'))
+    expect(result.current.settings.themeLightColor).toBe('#fffbf5')
+
+    act(() => result.current.setThemeDarkColor('#1a1a2e'))
+    expect(result.current.settings.themeDarkColor).toBe('#1a1a2e')
+
+    act(() => result.current.setThemeLightColor('not-a-color'))
+    expect(result.current.settings.themeLightColor).toBeNull()
+
+    act(() => result.current.setThemeDarkColor(null))
+    expect(result.current.settings.themeDarkColor).toBeNull()
   })
 })

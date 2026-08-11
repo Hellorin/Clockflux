@@ -21,8 +21,13 @@
 }
 
 :root {
+  /* Endpoint background colors, overridable per-user (Pro "themes" feature,
+     see App.tsx) via inline custom properties on <html>. Defaults match the
+     original hardcoded light/dark backgrounds. */
+  --bg-light-color: #fffbf5;
+  --bg-dark-color:  #1a1a2e;
   /* All colors interpolate between dark (0%) and light (100%) via --theme-mix */
-  --bg:          color-mix(in srgb, #fffbf5 var(--theme-mix), #1a1a2e);
+  --bg:          color-mix(in srgb, var(--bg-light-color) var(--theme-mix), var(--bg-dark-color));
   --surface:     color-mix(in srgb, #fdebd0 var(--theme-mix), #16213e);
   --surface-alt: color-mix(in srgb, #fdebd0 var(--theme-mix), #0f3460);
   --accent-in:      color-mix(in srgb, #16a34a var(--theme-mix), #4ade80);
@@ -1515,6 +1520,94 @@ input[type="time"]:focus {
 .settings-field-input:focus {
   outline: none;
   border-color: var(--accent-in);
+}
+
+.settings-swatch {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.settings-swatch--default {
+  background:
+    linear-gradient(to bottom right, transparent calc(50% - 1px), currentColor calc(50% - 1px), currentColor calc(50% + 1px), transparent calc(50% + 1px)),
+    var(--surface);
+  color: var(--text-muted);
+}
+
+/* Custom (non-native) dropdown for theme color pickers: a native <select>
+   can't fire hover events on its options, and previewing the app visibly
+   change theme as you hover an option is the point of this control. The
+   option list is portaled to <body> and positioned in fixed/viewport
+   coordinates (see ThemeColorDropdown.tsx) so the Settings page's cards
+   (which clip their contents for rounded corners) don't crop it. */
+.settings-theme-dropdown__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.3rem 0.55rem;
+  cursor: pointer;
+}
+
+.settings-theme-dropdown__trigger:focus-visible {
+  outline: none;
+  border-color: var(--accent-in);
+}
+
+.settings-theme-dropdown__caret {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+
+.settings-theme-dropdown__list {
+  position: fixed;
+  z-index: 500;
+  margin: 0;
+  padding: 0.3rem;
+  list-style: none;
+  min-width: 9.5rem;
+  max-height: 14rem;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.settings-theme-dropdown__option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.82rem;
+  padding: 0.35rem 0.5rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.settings-theme-dropdown__option:hover,
+.settings-theme-dropdown__option:focus-visible {
+  background: var(--surface-alt);
+  outline: none;
+}
+
+.settings-theme-dropdown__option--selected {
+  font-weight: 700;
 }
 
 .settings-field-suffix {

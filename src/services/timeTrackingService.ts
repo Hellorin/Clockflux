@@ -42,6 +42,17 @@ export function loadTimeTrackingData(): TimeEntriesData {
   return fixed
 }
 
+// Overwrites local time-entry data wholesale (e.g. restoring a synced
+// snapshot pulled from the backend). Runs it through the same migration/
+// stale-session fixups as a normal load so a restored snapshot can't put
+// the app in a state a fresh load never would.
+export function replaceAll(incoming: TimeEntriesData): TimeEntriesData {
+  const migrated = migrateDaysOff({ days: incoming.days ?? {}, daysOff: incoming.daysOff ?? {} })
+  const fixed = closeStaleSessions(migrated, getTodayKey())
+  resolveRepository().save(fixed)
+  return fixed
+}
+
 // Prevent check-in on full days off (including weekends). Half days off
 // still allow check-in for the working half of the day. No-op (returns the
 // same reference) when the check-in is rejected or redundant.

@@ -11,10 +11,10 @@ const ENTRY_DEBOUNCE_MS = 800
 const SETTINGS_DEBOUNCE_MS = 5000
 const HOUR_MS = 60 * 60 * 1000
 
-const settings = { annualHolidayAllowance: 25, employmentStartDate: null, holidayAccrualMode: 'gradual' as const }
+const settings = { annualHolidayAllowance: 25, employmentStartDate: null, holidayAccrualMode: 'gradual' as const, themeLightColor: null, themeDarkColor: null }
 
 function baseArgs(overrides: Partial<Parameters<typeof useSync>[0]> = {}) {
-  return { enabled: true, days: {}, daysOff: {}, settings, ...overrides }
+  return { enabled: true, days: {}, daysOff: {}, settings, onRestore: vi.fn(), ...overrides }
 }
 
 describe('useSync', () => {
@@ -48,6 +48,39 @@ describe('useSync', () => {
     })
 
     expect(result.current.lastSyncedAt).toEqual(new Date('2026-08-11T09:00:00Z'))
+  })
+
+  it('restores server data once when local is empty on enable', async () => {
+    const remoteData = {
+      days: { '2026-08-10': [{ checkIn: '2026-08-10T09:00:00Z', checkOut: '2026-08-10T17:00:00Z' }] },
+      daysOff: { '2026-08-07': 'personal' as const },
+      settings,
+    }
+    vi.mocked(syncService.getSync).mockResolvedValue({ data: remoteData, lastSyncedAt: '2026-08-11T09:00:00Z' })
+    const onRestore = vi.fn()
+    renderHook(() => useSync(baseArgs({ onRestore })))
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(onRestore).toHaveBeenCalledWith(remoteData)
+  })
+
+  it('does not restore server data when local already has entries', async () => {
+    const remoteData = { days: { '2026-08-10': [{ checkIn: '2026-08-10T09:00:00Z', checkOut: null }] }, daysOff: {}, settings }
+    vi.mocked(syncService.getSync).mockResolvedValue({ data: remoteData, lastSyncedAt: '2026-08-11T09:00:00Z' })
+    const onRestore = vi.fn()
+    renderHook(() => useSync(baseArgs({
+      onRestore,
+      days: { '2026-08-11': [{ checkIn: '2026-08-11T09:00:00Z', checkOut: null }] },
+    })))
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(onRestore).not.toHaveBeenCalled()
   })
 
   it('syncs almost immediately after a check-in/check-out (a days change)', async () => {

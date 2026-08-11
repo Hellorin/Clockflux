@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getSync, pushSync } from './syncService'
 
-const emptyData = { days: {}, daysOff: {}, settings: { annualHolidayAllowance: 25, employmentStartDate: null, holidayAccrualMode: 'gradual' as const } }
+const emptyData = { days: {}, daysOff: {}, settings: { annualHolidayAllowance: 25, employmentStartDate: null, holidayAccrualMode: 'gradual' as const, themeLightColor: null, themeDarkColor: null } }
 
 describe('getSync', () => {
   beforeEach(() => {

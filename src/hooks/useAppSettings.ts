@@ -1,16 +1,24 @@
 import { useCallback, useState } from 'react'
 import * as settingsService from '../services/settingsService'
+import { isValidDarkThemeColor, isValidLightThemeColor } from '../constants/themeColors'
 import type { HolidayAccrualMode, Settings } from '../types'
 
 const DEFAULTS: Settings = {
   annualHolidayAllowance: 25,
   employmentStartDate: null,
   holidayAccrualMode: 'gradual',
+  themeLightColor: null,
+  themeDarkColor: null,
 }
 
 function loadSettings(): Settings {
   const parsed = settingsService.loadSettingsRaw() ?? {}
-  return { ...DEFAULTS, ...parsed }
+  const merged = { ...DEFAULTS, ...parsed }
+  // Guard against a stale value from a previous release's swatch list (or
+  // corrupted storage) no longer being one of the curated options.
+  if (!isValidLightThemeColor(merged.themeLightColor)) merged.themeLightColor = null
+  if (!isValidDarkThemeColor(merged.themeDarkColor)) merged.themeDarkColor = null
+  return merged
 }
 
 export function useAppSettings() {
@@ -43,5 +51,33 @@ export function useAppSettings() {
     })
   }, [])
 
-  return { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode }
+  const setThemeLightColor = useCallback((value: string | null) => {
+    const v = isValidLightThemeColor(value) ? value : null
+    setSettings(prev => {
+      const next = { ...prev, themeLightColor: v }
+      settingsService.saveSettings(next)
+      return next
+    })
+  }, [])
+
+  const setThemeDarkColor = useCallback((value: string | null) => {
+    const v = isValidDarkThemeColor(value) ? value : null
+    setSettings(prev => {
+      const next = { ...prev, themeDarkColor: v }
+      settingsService.saveSettings(next)
+      return next
+    })
+  }, [])
+
+  // Wholesale overwrite, used to restore a synced snapshot pulled from the
+  // backend. Not exposed anywhere in the UI, only to the sync hook.
+  const replaceSettings = useCallback((next: Settings) => {
+    const merged = { ...DEFAULTS, ...next }
+    if (!isValidLightThemeColor(merged.themeLightColor)) merged.themeLightColor = null
+    if (!isValidDarkThemeColor(merged.themeDarkColor)) merged.themeDarkColor = null
+    settingsService.saveSettings(merged)
+    setSettings(merged)
+  }, [])
+
+  return { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode, setThemeLightColor, setThemeDarkColor, replaceSettings }
 }

@@ -5,7 +5,7 @@ import * as timeTrackingService from '../services/timeTrackingService'
 import * as ptoService from '../services/ptoService'
 import * as statsService from '../services/statsService'
 import type { GlobalStats } from '../utils/stats'
-import type { DayOffType, Session } from '../types'
+import type { DayOffType, Session, TimeEntriesData } from '../types'
 
 export type Milestone = timeTrackingService.Milestone
 
@@ -65,6 +65,12 @@ export function useTimeTracker() {
     setData(prev => timeTrackingService.setDaysOffTypeBulk(prev, dateKeys, type))
   }, [])
 
+  // Wholesale overwrite, used to restore a synced snapshot pulled from the
+  // backend. Not exposed anywhere in the UI, only to the sync hook.
+  const replaceAll = useCallback((next: TimeEntriesData) => {
+    setData(timeTrackingService.replaceAll(next))
+  }, [])
+
   // Fraction of today expected to be worked: 0 on a full day off or weekend,
   // 0.5 on a half day off, 1 otherwise.
   const todayWorkFraction = isWeekend(todayKey) ? 0 : 1 - dayOffFraction(data.daysOff[todayKey])
@@ -116,6 +122,7 @@ export function useTimeTracker() {
     daysOff: data.daysOff,
     setDayOffType,
     setDaysOffTypeBulk,
+    replaceAll,
     isTodayOff,
     todayTargetMs,
     personalDaysUsedThisYear,
