@@ -33,8 +33,18 @@ export interface Settings {
   holidayAccrualMode: HolidayAccrualMode
 }
 
+export type Plan = 'free' | 'pro'
+
 export interface AuthUser {
   name: string
   email: string
   picture: string
+  plan: Plan
+}
+
+/** Everything a Pro user's data-sync push/pull carries: time entries plus holiday settings. */
+export interface SyncData {
+  days: DaysMap
+  daysOff: DaysOffMap
+  settings: Settings
 }

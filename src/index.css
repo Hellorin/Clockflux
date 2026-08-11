@@ -1450,6 +1450,11 @@ input[type="time"]:focus {
   text-align: left;
 }
 
+.settings-section__header--static {
+  cursor: default;
+  padding-bottom: 0.4rem;
+}
+
 .settings-section__title {
   font-size: 0.85rem;
   font-weight: 700;
@@ -1548,6 +1553,42 @@ input[type="time"]:focus {
   font-size: 0.72rem;
   color: var(--text-muted);
   font-style: italic;
+}
+
+.settings-sync-row {
+  gap: 0.8rem;
+}
+
+.settings-sync-star {
+  color: var(--accent-in);
+}
+
+.settings-sync-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0.4rem;
+  line-height: 0;
+}
+
+.settings-sync-btn:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.settings-sync-icon--spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ─── Health Page ───────────────────────────────────────────────────────── */

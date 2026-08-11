@@ -57,4 +57,63 @@ describe('SettingsPage', () => {
     fireEvent.click(screen.getByText('Holiday'))
     expect(screen.queryByText(/Prorated from/)).not.toBeInTheDocument()
   })
+
+  it('hides the Sync section by default', () => {
+    render(
+      <SettingsPage
+        allowance={24}
+        onAllowanceChange={() => {}}
+        startDate={null}
+        onStartDateChange={() => {}}
+        accrualMode="gradual"
+        onAccrualModeChange={() => {}}
+      />
+    )
+    expect(screen.queryByLabelText('Sync now')).not.toBeInTheDocument()
+  })
+
+  it('shows the Sync section already expanded, with no toggle, when showSync is true', () => {
+    const onSyncNow = vi.fn()
+    const { container } = render(
+      <SettingsPage
+        allowance={24}
+        onAllowanceChange={() => {}}
+        startDate={null}
+        onStartDateChange={() => {}}
+        accrualMode="gradual"
+        onAccrualModeChange={() => {}}
+        showSync
+        lastSyncedAt={new Date('2026-08-11T10:30:00')}
+        isSyncing={false}
+        onSyncNow={onSyncNow}
+      />
+    )
+
+    // No collapse toggle: the section header isn't a button.
+    expect(container.querySelector('.settings-section__header')?.tagName).toBe('DIV')
+    expect(screen.getByText(/Last synced/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sync now' }))
+    expect(onSyncNow).toHaveBeenCalled()
+  })
+
+  it('shows a syncing state and disables the button while a sync is in flight', () => {
+    render(
+      <SettingsPage
+        allowance={24}
+        onAllowanceChange={() => {}}
+        startDate={null}
+        onStartDateChange={() => {}}
+        accrualMode="gradual"
+        onAccrualModeChange={() => {}}
+        showSync
+        lastSyncedAt={null}
+        isSyncing
+        onSyncNow={() => {}}
+      />
+    )
+
+    expect(screen.getByText('Syncing…')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Sync now' })).toBeDisabled()
+  })
 })
