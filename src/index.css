@@ -1421,6 +1421,135 @@ input[type="time"]:focus {
   gap: 1.25rem;
 }
 
+/* ─── Settings Page ─────────────────────────────────────────────────────── */
+.settings-page {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.settings-section {
+  background: var(--surface-alt);
+  border-radius: var(--radius);
+  border: 2px solid transparent;
+  overflow: hidden;
+}
+
+.settings-section__header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  background: transparent;
+  border: none;
+  padding: 1rem 1.1rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.settings-section__title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+.settings-section__chevron {
+  font-size: 1.3rem;
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+.settings-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0 1.1rem 1rem;
+}
+
+.settings-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.settings-field-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.settings-field-control {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+
+.settings-field-input {
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  text-align: center;
+  width: 4rem;
+}
+
+.settings-field-input--date {
+  width: auto;
+  min-width: 8rem;
+  text-align: left;
+}
+
+.settings-field-input:focus {
+  outline: none;
+  border-color: var(--accent-in);
+}
+
+.settings-field-suffix {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.settings-mode-toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+}
+
+.settings-mode-btn {
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 0.3rem 0.55rem;
+  cursor: pointer;
+}
+
+.settings-mode-btn--active {
+  background: var(--accent-in);
+  color: var(--bg);
+}
+
+.settings-note {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 /* ─── Health Page ───────────────────────────────────────────────────────── */
 .health-page {
   width: 100%;
@@ -1707,111 +1836,6 @@ input[type="time"]:focus {
   font-weight: 700;
   color: var(--text);
   font-variant-numeric: tabular-nums;
-}
-
-.holiday-card__edit-toggle {
-  align-self: flex-end;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 6px;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 0.75rem;
-  padding: 0.2rem 0.6rem;
-}
-
-.holiday-card__edit-toggle:hover {
-  color: var(--text);
-  border-color: rgba(255, 255, 255, 0.32);
-}
-
-.holiday-card__settings {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding-top: 0.6rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.holiday-card__field {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem;
-}
-
-.holiday-card__field-label {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-}
-
-.holiday-card__field-control {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.3rem;
-}
-
-.holiday-card__field-input {
-  background: var(--surface);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 6px;
-  color: var(--text);
-  font-family: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
-  padding: 0.25rem 0.5rem;
-  text-align: center;
-  width: 4rem;
-}
-
-.holiday-card__field-input--date {
-  width: auto;
-  min-width: 8rem;
-  text-align: left;
-}
-
-.holiday-card__field-input:focus {
-  outline: none;
-  border-color: var(--accent-in);
-}
-
-.holiday-card__field-suffix {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.holiday-card__mode-toggle {
-  display: inline-flex;
-  gap: 2px;
-  padding: 2px;
-  background: var(--surface);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 8px;
-}
-
-.holiday-card__mode-btn {
-  font-family: inherit;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  padding: 0.3rem 0.55rem;
-  cursor: pointer;
-}
-
-.holiday-card__mode-btn--active {
-  background: var(--accent-in);
-  color: var(--bg);
-}
-
-.holiday-card__note {
-  margin: 0;
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  font-style: italic;
 }
 
 .holiday-card__projection {

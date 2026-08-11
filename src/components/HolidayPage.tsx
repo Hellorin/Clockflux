@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { getTodayKey } from '../utils/time'
 import { formatHolidayDays } from '../utils/holidays'
 import { dayOffBaseType, dayOffFraction } from '../utils/dayOff'
@@ -10,32 +10,25 @@ interface HolidayPageProps {
   used: number
   daysOff: DaysOffMap
   allowance: number
-  onAllowanceChange: (value: number | string) => void
   startDate: string | null
-  onStartDateChange: (value: string | null) => void
   accrualMode: HolidayAccrualMode
-  onAccrualModeChange: (value: string) => void
 }
 
-export default function HolidayPage({ used, daysOff, allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange }: HolidayPageProps) {
+export default function HolidayPage({ used, daysOff, allowance, startDate, accrualMode }: HolidayPageProps) {
   return (
     <section className="holiday-page">
       <HolidayBalanceCard
         used={used}
         daysOff={daysOff}
         allowance={allowance}
-        onAllowanceChange={onAllowanceChange}
         startDate={startDate}
-        onStartDateChange={onStartDateChange}
         accrualMode={accrualMode}
-        onAccrualModeChange={onAccrualModeChange}
       />
     </section>
   )
 }
 
-function HolidayBalanceCard({ used, daysOff, allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange }: HolidayPageProps) {
-  const [showSettings, setShowSettings] = useState(false)
+function HolidayBalanceCard({ used, daysOff, allowance, startDate, accrualMode }: HolidayPageProps) {
   const year = useMemo(() => new Date().getFullYear(), [])
   const todayKey = getTodayKey()
 
@@ -99,75 +92,6 @@ function HolidayBalanceCard({ used, daysOff, allowance, onAllowanceChange, start
         </p>
       </div>
       <HolidayChart daysOff={daysOff} allowance={allowance} startDate={startDate} accrualMode={accrualMode} />
-      <button
-        type="button"
-        className="holiday-card__edit-toggle"
-        onClick={() => setShowSettings(s => !s)}
-        aria-expanded={showSettings}
-      >
-        {showSettings ? 'Done' : 'Edit'}
-      </button>
-      {showSettings && (
-        <div className="holiday-card__settings">
-          <div className="holiday-card__field">
-            <span className="holiday-card__field-label">Accrual</span>
-            <div className="holiday-card__mode-toggle" role="radiogroup" aria-label="Holiday accrual mode">
-              <button
-                type="button"
-                className={`holiday-card__mode-btn${accrualMode !== 'immediate' ? ' holiday-card__mode-btn--active' : ''}`}
-                aria-pressed={accrualMode !== 'immediate'}
-                onClick={() => onAccrualModeChange('gradual')}
-              >
-                Gradually
-              </button>
-              <button
-                type="button"
-                className={`holiday-card__mode-btn${accrualMode === 'immediate' ? ' holiday-card__mode-btn--active' : ''}`}
-                aria-pressed={accrualMode === 'immediate'}
-                onClick={() => onAccrualModeChange('immediate')}
-              >
-                All at once
-              </button>
-            </div>
-          </div>
-          <label className="holiday-card__field">
-            <span className="holiday-card__field-label">Annual allowance</span>
-            <span className="holiday-card__field-control">
-              <input
-                type="number"
-                min="0"
-                className="holiday-card__field-input"
-                value={allowance}
-                onChange={e => onAllowanceChange(e.target.value)}
-                aria-label="Annual holiday allowance"
-              />
-              <span className="holiday-card__field-suffix">days/yr</span>
-            </span>
-          </label>
-          <label className="holiday-card__field">
-            <span className="holiday-card__field-label">Started on</span>
-            <input
-              type="date"
-              className="holiday-card__field-input holiday-card__field-input--date"
-              value={startDate || ''}
-              onChange={e => onStartDateChange(e.target.value)}
-              aria-label="Employment start date"
-            />
-          </label>
-          {isProrated && (
-            <p className="holiday-card__note">
-              Prorated from {formatStartDate(startDate)} ({formatHolidayDays(proratedAllowance)} of {allowance} days)
-            </p>
-          )}
-        </div>
-      )}
     </div>
   )
-}
-
-function formatStartDate(key: string | null): string {
-  if (!key) return ''
-  const [y, m, d] = key.split('-').map(Number)
-  const date = new Date(y, m - 1, d)
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }

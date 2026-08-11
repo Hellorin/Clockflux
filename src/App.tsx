@@ -14,12 +14,13 @@ import DayEditModal from './components/DayEditModal'
 import CelebrationOverlay from './components/CelebrationOverlay'
 import HealthPage from './components/HealthPage'
 import HolidayPage from './components/HolidayPage'
+import SettingsPage from './components/SettingsPage'
 import { formatDateKey } from './utils/time'
 import * as preferencesService from './services/preferencesService'
 import type { Milestone } from './hooks/useTimeTracker'
 import type { HoursFormat, Session } from './types'
 
-type View = 'tracker' | 'calendar' | 'holiday' | 'health'
+type View = 'tracker' | 'calendar' | 'holiday' | 'health' | 'settings'
 
 const AUTH_ENABLED = import.meta.env.VITE_ENABLE_AUTH === 'true'
 // Master switch for paid-only functionality. Nothing is paid-gated yet, but
@@ -45,8 +46,9 @@ export default function App() {
   const enabledViews = new Set(features.map(feature => feature.key))
   // If the active tab's feature gets disabled out from under the user (e.g.
   // after sign-out drops an authenticated-only feature), fall back to the
-  // first tab that's still enabled rather than rendering a dead tab.
-  const activeView = enabledViews.has(view) ? view : ((features[0]?.key as View | undefined) ?? view)
+  // first tab that's still enabled rather than rendering a dead tab. Settings
+  // is always available regardless of the backend feature flags.
+  const activeView = (view === 'settings' || enabledViews.has(view)) ? view : ((features[0]?.key as View | undefined) ?? view)
 
   useEffect(() => {
     setMilestoneCallback(type => setCelebrationMilestone(type))
@@ -122,11 +124,8 @@ export default function App() {
             used={personalDaysUsedThisYear}
             daysOff={daysOff}
             allowance={settings.annualHolidayAllowance}
-            onAllowanceChange={setAnnualHolidayAllowance}
             startDate={settings.employmentStartDate}
-            onStartDateChange={setEmploymentStartDate}
             accrualMode={settings.holidayAccrualMode}
-            onAccrualModeChange={setHolidayAccrualMode}
           />
         )}
         {activeView === 'health' && (
@@ -135,6 +134,16 @@ export default function App() {
             allDays={allDays}
             daysOff={daysOff}
             employmentStartDate={settings.employmentStartDate}
+          />
+        )}
+        {activeView === 'settings' && (
+          <SettingsPage
+            allowance={settings.annualHolidayAllowance}
+            onAllowanceChange={setAnnualHolidayAllowance}
+            startDate={settings.employmentStartDate}
+            onStartDateChange={setEmploymentStartDate}
+            accrualMode={settings.holidayAccrualMode}
+            onAccrualModeChange={setHolidayAccrualMode}
           />
         )}
       </main>
@@ -191,6 +200,14 @@ export default function App() {
             <span className="tab-label">Health</span>
           </button>
         )}
+        <button
+          type="button"
+          className={`tab-btn${activeView === 'settings' ? ' tab-btn--active' : ''}`}
+          onClick={() => setView('settings')}
+        >
+          <span className="tab-icon">⚙️</span>
+          <span className="tab-label">Settings</span>
+        </button>
       </nav>
     </div>
     <Analytics />
