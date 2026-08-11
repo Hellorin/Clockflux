@@ -22,7 +22,7 @@ function toKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
-export function useTimeTracker() {
+export function useTimeTracker(dailyTargetHours: number = 8) {
   const [data, setData] = useState(timeTrackingService.loadTimeTrackingData)
   const milestoneCallbackRef = useRef<((milestone: Milestone) => void) | null>(null)
 
@@ -75,7 +75,7 @@ export function useTimeTracker() {
   // 0.5 on a half day off, 1 otherwise.
   const todayWorkFraction = isWeekend(todayKey) ? 0 : 1 - dayOffFraction(data.daysOff[todayKey])
   const isTodayOff = todayWorkFraction === 0
-  const todayTargetMs = todayWorkFraction * 8 * 3600000
+  const todayTargetMs = todayWorkFraction * dailyTargetHours * 3600000
 
   const stats: GlobalStats = useMemo(() => statsService.getGlobalStats(data.days, data.daysOff), [data.days, data.daysOff])
 
@@ -87,7 +87,7 @@ export function useTimeTracker() {
   const weekDays = getWeekDays()
   const weekdays = weekDays.slice(0, 5)
   const daysOffSum = weekdays.reduce((sum, d) => sum + dayOffFraction(data.daysOff[toKey(d)]), 0)
-  const weekTargetMs = (5 - daysOffSum) * 8 * 3600000
+  const weekTargetMs = (5 - daysOffSum) * dailyTargetHours * 3600000
   const weekTotalOtherDaysMs = weekDays.reduce((sum, date) => {
     const key = toKey(date)
     if (key === todayKey || dayOffFraction(data.daysOff[key]) === 1 || isWeekend(key)) return sum
@@ -100,14 +100,14 @@ export function useTimeTracker() {
     if (isWeekend(key) || key >= todayKey) return sum
     return sum + (1 - dayOffFraction(data.daysOff[key]))
   }, 0)
-  const weekElapsedTargetMs = elapsedWorkFraction * 8 * 3600000
+  const weekElapsedTargetMs = elapsedWorkFraction * dailyTargetHours * 3600000
 
   // Cumulative overtime from all workdays before today (all history, not just this week)
   const allPastWorkdayOvertimeMs = Object.entries(data.days).reduce((sum, [key, sessions]) => {
     if (key >= todayKey || isWeekend(key)) return sum
     const fraction = dayOffFraction(data.daysOff[key])
     if (fraction === 1) return sum
-    return sum + sumSessionsMs(sessions) - (1 - fraction) * 8 * 3600000
+    return sum + sumSessionsMs(sessions) - (1 - fraction) * dailyTargetHours * 3600000
   }, 0)
 
   return {

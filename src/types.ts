@@ -34,6 +34,8 @@ export interface Settings {
   /** Custom theme colors (Pro "themes" feature). Null = use the app default. */
   themeLightColor: string | null
   themeDarkColor: string | null
+  /** Expected work hours per day (Pro "custom-daily-target" feature). Defaults to 8. */
+  dailyTargetHours: number
 }
 
 export type Plan = 'free' | 'pro'
