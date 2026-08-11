@@ -1724,6 +1724,18 @@ input[type="time"]:focus {
   font-style: italic;
 }
 
+.cal-scope-note {
+  margin: -0.5rem 0 0.85rem;
+}
+
+.health-scope-note {
+  margin: -0.5rem 0 0.85rem;
+}
+
+.holiday-carryover-note {
+  margin: 0.85rem 0 0;
+}
+
 .settings-sync-row {
   gap: 0.8rem;
 }

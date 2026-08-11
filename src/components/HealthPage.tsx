@@ -13,6 +13,9 @@ interface HealthPageProps {
   allDays: DayEntry[]
   daysOff: DaysOffMap
   employmentStartDate: string | null
+  /** Whether the stats below are capped to the current year (free plan) or
+   *  cover full history (Pro) — null when paid gating isn't active at all. */
+  historyScope?: 'limited' | 'unlimited' | null
 }
 
 const STATUS_CONFIG: Record<RecentWeeklyAvgStatus, { icon: string, message: string, modifier: string }> = {
@@ -43,7 +46,7 @@ const STATUS_CONFIG: Record<RecentWeeklyAvgStatus, { icon: string, message: stri
   },
 }
 
-export default function HealthPage({ stats, allDays, daysOff, employmentStartDate }: HealthPageProps) {
+export default function HealthPage({ stats, allDays, daysOff, employmentStartDate, historyScope = null }: HealthPageProps) {
   const healthData = useMemo(() => {
     const days = Object.fromEntries(allDays.map(d => [d.date, d.sessions]))
     return getRecentWeeklyAvg(days, daysOff)
@@ -163,11 +166,22 @@ export default function HealthPage({ stats, allDays, daysOff, employmentStartDat
         <HealthMetric
           label="Cumulative overtime"
           value={(cumulativeOvertimeHours >= 0 ? '+' : '-') + decimalToHoursMinutes(Math.abs(cumulativeOvertimeHours))}
-          sub="across all completed weeks"
+          sub={historyScope === 'limited' ? `across ${new Date().getFullYear()} only` : 'across all completed weeks'}
           modifier={cumulativeOvertimeHours >= 0 ? 'positive' : 'negative'}
           updatedAt={lastOvertimeDate ?? lastDayUpdated}
         />
       </div>
+
+      {historyScope === 'limited' && (
+        <p className="settings-note health-scope-note">
+          Free plan: stats cover {new Date().getFullYear()} only — <span className="settings-sync-star" aria-hidden="true">✦</span> Pro unlocks full history.
+        </p>
+      )}
+      {historyScope === 'unlimited' && (
+        <p className="settings-note health-scope-note">
+          <span className="settings-sync-star" aria-hidden="true">✦</span> Stats cover your full history
+        </p>
+      )}
 
       <WeekBreakdown weeks={recentWeeks} />
     </section>

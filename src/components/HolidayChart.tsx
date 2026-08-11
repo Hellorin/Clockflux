@@ -9,6 +9,8 @@ interface HolidayChartProps {
   allowance: number
   startDate: string | null
   accrualMode: HolidayAccrualMode
+  /** Days carried in from last year (Pro "holiday-carryover" feature), added to the "earned" line. */
+  carryoverDays?: number
 }
 
 const MONTH_LABELS = ['J','F','M','A','M','J','J','A','S','O','N','D']
@@ -20,7 +22,7 @@ const CW = W - PAD.l - PAD.r
 const CH = H - PAD.t - PAD.b
 const LEGEND_Y = 8
 
-export default function HolidayChart({ daysOff, allowance, startDate, accrualMode }: HolidayChartProps) {
+export default function HolidayChart({ daysOff, allowance, startDate, accrualMode, carryoverDays = 0 }: HolidayChartProps) {
   const today = useMemo(() => new Date(), [])
   const year = today.getFullYear()
   const currentM = today.getMonth()
@@ -40,14 +42,14 @@ export default function HolidayChart({ daysOff, allowance, startDate, accrualMod
       const i = startMonth + idx
       const monthEnd = new Date(year, i + 1, 0)
       const monthEndKey = `${year}-${String(i + 1).padStart(2, '0')}-${String(monthEnd.getDate()).padStart(2, '0')}`
-      const earned = getAccruedDays(startDate, allowance, monthEnd, accrualMode)
+      const earned = getAccruedDays(startDate, allowance, monthEnd, accrualMode) + carryoverDays
       const used = Object.entries(daysOff).reduce((n, [k, v]) => {
         if (dayOffBaseType(v) !== 'personal' || !k.startsWith(`${year}-`)) return n
         return k <= monthEndKey ? n + dayOffFraction(v) : n
       }, 0)
       return { month: i, earned, used }
     })
-  }, [daysOff, startDate, allowance, year, startMonth, accrualMode])
+  }, [daysOff, startDate, allowance, year, startMonth, accrualMode, carryoverDays])
 
   const maxY = Math.max(...data.map(d => Math.max(d.earned, d.used)), 1)
 

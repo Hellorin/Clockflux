@@ -16,6 +16,7 @@ describe('useAppSettings', () => {
       themeLightColor: null,
       themeDarkColor: null,
       dailyTargetHours: 8,
+      holidayCarryoverEnabled: false,
     })
   })
 
@@ -96,5 +97,17 @@ describe('useAppSettings', () => {
 
     const stored = JSON.parse(localStorage.getItem('timeforgeSettings')!)
     expect(stored.dailyTargetHours).toBe(0)
+  })
+
+  it('sets and persists holiday carryover enabled, coercing to a boolean', () => {
+    const { result } = renderHook(() => useAppSettings())
+    act(() => result.current.setHolidayCarryoverEnabled(true))
+    expect(result.current.settings.holidayCarryoverEnabled).toBe(true)
+
+    const stored = JSON.parse(localStorage.getItem('timeforgeSettings')!)
+    expect(stored.holidayCarryoverEnabled).toBe(true)
+
+    act(() => result.current.setHolidayCarryoverEnabled(false))
+    expect(result.current.settings.holidayCarryoverEnabled).toBe(false)
   })
 })

@@ -216,4 +216,42 @@ describe('SettingsPage', () => {
     expect(onPreviewThemeEnd).toHaveBeenCalled()
     expect(screen.queryByRole('listbox', { name: 'Light theme color' })).not.toBeInTheDocument()
   })
+
+  it('hides the holiday carryover toggle by default', () => {
+    render(
+      <SettingsPage
+        allowance={24}
+        onAllowanceChange={() => {}}
+        startDate={null}
+        onStartDateChange={() => {}}
+        accrualMode="gradual"
+        onAccrualModeChange={() => {}}
+      />
+    )
+    fireEvent.click(screen.getByText('Holiday'))
+    expect(screen.queryByLabelText('Carry over unused holiday days into the new year')).not.toBeInTheDocument()
+  })
+
+  it('shows and toggles the holiday carryover setting when showHolidayCarryover is true', () => {
+    const onHolidayCarryoverEnabledChange = vi.fn()
+    render(
+      <SettingsPage
+        allowance={24}
+        onAllowanceChange={() => {}}
+        startDate={null}
+        onStartDateChange={() => {}}
+        accrualMode="gradual"
+        onAccrualModeChange={() => {}}
+        showHolidayCarryover
+        holidayCarryoverEnabled={false}
+        onHolidayCarryoverEnabledChange={onHolidayCarryoverEnabledChange}
+      />
+    )
+    fireEvent.click(screen.getByText('Holiday'))
+    const checkbox = screen.getByLabelText('Carry over unused holiday days into the new year')
+    expect(checkbox).not.toBeChecked()
+
+    fireEvent.click(checkbox)
+    expect(onHolidayCarryoverEnabledChange).toHaveBeenCalledWith(true)
+  })
 })

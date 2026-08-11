@@ -22,13 +22,33 @@ function toKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
-export function useTimeTracker(dailyTargetHours: number = 8) {
+// Restricts a days/daysOff map to entries dated within `year` (the "YYYY"
+// prefix of the date key). Used to cap free-plan users to the current year
+// everywhere history is displayed or summed, while the underlying storage
+// (and anything synced to the backend) keeps every year untouched.
+function filterToYear<T>(map: Record<string, T>, year: string): Record<string, T> {
+  const out: Record<string, T> = {}
+  for (const [key, value] of Object.entries(map)) {
+    if (key.startsWith(year)) out[key] = value
+  }
+  return out
+}
+
+// `unlimitedHistory`: Pro-only entitlement. When false (the free-plan
+// default), every history-derived view (allDays, stats, cumulative
+// overtime) is capped to the current year — full data still lives in
+// storage and still syncs in full, this only trims what's read back out.
+export function useTimeTracker(dailyTargetHours: number = 8, unlimitedHistory: boolean = true) {
   const [data, setData] = useState(timeTrackingService.loadTimeTrackingData)
   const milestoneCallbackRef = useRef<((milestone: Milestone) => void) | null>(null)
 
   const todayKey = getTodayKey()
   const todaySessions = data.days[todayKey] || []
   const isCheckedIn = todaySessions.length > 0 && todaySessions[todaySessions.length - 1].checkOut === null
+
+  const currentYear = todayKey.slice(0, 4)
+  const historyDays = unlimitedHistory ? data.days : filterToYear(data.days, currentYear)
+  const historyDaysOff = unlimitedHistory ? data.daysOff : filterToYear(data.daysOff, currentYear)
 
   const checkIn = useCallback(() => {
     setData(prev => timeTrackingService.checkIn(prev))
@@ -43,10 +63,10 @@ export function useTimeTracker(dailyTargetHours: number = 8) {
   }, [])
 
   // Build sorted history (newest first), excluding today if today has no sessions
-  const allDays: DayEntry[] = Object.entries(data.days)
+  const allDays: DayEntry[] = Object.entries(historyDays)
     .filter(([, sessions]) => sessions.length > 0)
     .map(([date, sessions]) => {
-      const isOff = dayOffFraction(data.daysOff[date]) === 1 || isWeekend(date)
+      const isOff = dayOffFraction(historyDaysOff[date]) === 1 || isWeekend(date)
       const totalMs = isOff ? 0 : sumSessionsMs(sessions)
       const autoCheckedOut = sessions.some(s => s.autoCheckedOut)
       return { date, sessions, totalMs, totalDecimal: toDecimalHours(totalMs), isOff, autoCheckedOut }
@@ -77,7 +97,7 @@ export function useTimeTracker(dailyTargetHours: number = 8) {
   const isTodayOff = todayWorkFraction === 0
   const todayTargetMs = todayWorkFraction * dailyTargetHours * 3600000
 
-  const stats: GlobalStats = useMemo(() => statsService.getGlobalStats(data.days, data.daysOff), [data.days, data.daysOff])
+  const stats: GlobalStats = useMemo(() => statsService.getGlobalStats(historyDays, historyDaysOff), [historyDays, historyDaysOff])
 
   const personalDaysUsedThisYear = useMemo(() => ptoService.getPersonalDaysUsedThisYear(data.daysOff), [data.daysOff])
 
@@ -102,10 +122,11 @@ export function useTimeTracker(dailyTargetHours: number = 8) {
   }, 0)
   const weekElapsedTargetMs = elapsedWorkFraction * dailyTargetHours * 3600000
 
-  // Cumulative overtime from all workdays before today (all history, not just this week)
-  const allPastWorkdayOvertimeMs = Object.entries(data.days).reduce((sum, [key, sessions]) => {
+  // Cumulative overtime from all workdays before today (all history, not just
+  // this week — capped to the current year on the free plan, same as allDays/stats)
+  const allPastWorkdayOvertimeMs = Object.entries(historyDays).reduce((sum, [key, sessions]) => {
     if (key >= todayKey || isWeekend(key)) return sum
-    const fraction = dayOffFraction(data.daysOff[key])
+    const fraction = dayOffFraction(historyDaysOff[key])
     if (fraction === 1) return sum
     return sum + sumSessionsMs(sessions) - (1 - fraction) * dailyTargetHours * 3600000
   }, 0)

@@ -77,6 +77,16 @@ export function computeProratedAllowance(startDateKey: string | null | undefined
   return (allowance * monthsRemaining) / 12
 }
 
+// Days carried over from the previous year (Pro "holiday-carryover" feature).
+// A prior year's balance is always fully earned by Dec 31 regardless of
+// accrual mode (see computeAccruedDays), so the carry-in is simply what was
+// prorated for that year minus what was actually used — floored at 0 since
+// an over-spent prior year shouldn't dock the new year's balance.
+export function computeCarryoverDays(startDateKey: string | null | undefined, annualAllowance: number, priorYearUsed: number, priorYear: number): number {
+  const proratedPriorYear = computeProratedAllowance(startDateKey, annualAllowance, priorYear)
+  return Math.max(0, proratedPriorYear - priorYearUsed)
+}
+
 export function formatHolidayDays(n: number): string {
   if (!Number.isFinite(n)) return '0'
   const floored = Math.floor(n * 10) / 10
