@@ -2,6 +2,8 @@ import { useMemo } from 'react'
 import { getProratedAllowance } from '../services/ptoService'
 import { formatHolidayDays } from '../utils/holidays'
 import SettingsSection from './SettingsSection'
+import ThemeColorDropdown from './ThemeColorDropdown'
+import { DARK_THEME_OPTIONS, LIGHT_THEME_OPTIONS } from '../constants/themeColors'
 import type { HolidayAccrualMode } from '../types'
 
 interface SettingsPageProps {
@@ -15,9 +17,18 @@ interface SettingsPageProps {
   lastSyncedAt?: Date | null
   isSyncing?: boolean
   onSyncNow?: () => void
+  showThemes?: boolean
+  themeLightColor?: string | null
+  themeDarkColor?: string | null
+  onThemeLightColorChange?: (value: string | null) => void
+  onThemeDarkColorChange?: (value: string | null) => void
+  /** Live-previews the app in the given mode with the given color as the user hovers a dropdown option. */
+  onPreviewTheme?: (mode: 'light' | 'dark', color: string | null) => void
+  /** Ends a preview, reverting to the actually-selected theme. */
+  onPreviewThemeEnd?: () => void
 }
 
-export default function SettingsPage({ allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange, showSync = false, lastSyncedAt = null, isSyncing = false, onSyncNow }: SettingsPageProps) {
+export default function SettingsPage({ allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange, showSync = false, lastSyncedAt = null, isSyncing = false, onSyncNow, showThemes = false, themeLightColor = null, themeDarkColor = null, onThemeLightColorChange, onThemeDarkColorChange, onPreviewTheme, onPreviewThemeEnd }: SettingsPageProps) {
   const year = useMemo(() => new Date().getFullYear(), [])
   const proratedAllowance = getProratedAllowance(startDate, allowance, year)
   const isProrated = startDate && proratedAllowance !== allowance
@@ -51,6 +62,33 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
                 />
               </svg>
             </button>
+          </div>
+        </SettingsSection>
+      )}
+
+      {showThemes && (
+        <SettingsSection title={<><span className="settings-sync-star" aria-hidden="true">✦</span> Theme</>} collapsible={false}>
+          <div className="settings-field">
+            <span className="settings-field-label">Light color</span>
+            <ThemeColorDropdown
+                groupLabel="Light theme color"
+                options={LIGHT_THEME_OPTIONS}
+                selected={themeLightColor}
+                onSelect={value => onThemeLightColorChange?.(value)}
+                onPreview={value => onPreviewTheme?.('light', value)}
+                onPreviewEnd={() => onPreviewThemeEnd?.()}
+            />
+          </div>
+          <div className="settings-field">
+            <span className="settings-field-label">Dark color</span>
+            <ThemeColorDropdown
+                groupLabel="Dark theme color"
+                options={DARK_THEME_OPTIONS}
+                selected={themeDarkColor}
+                onSelect={value => onThemeDarkColorChange?.(value)}
+                onPreview={value => onPreviewTheme?.('dark', value)}
+                onPreviewEnd={() => onPreviewThemeEnd?.()}
+            />
           </div>
         </SettingsSection>
       )}

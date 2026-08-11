@@ -1,5 +1,5 @@
 import { Analytics } from "@vercel/analytics/react"
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTimeTracker } from './hooks/useTimeTracker'
 import { useAppSettings } from './hooks/useAppSettings'
 import { useLandingPage } from './hooks/useLandingPage'
@@ -35,8 +35,8 @@ interface SelectedDay {
 }
 
 export default function App() {
-  const { isCheckedIn, checkIn, checkOut, todaySessions, todayKey, allDays, setDaySessions, days, daysOff, setDayOffType, setDaysOffTypeBulk, isTodayOff, todayTargetMs, personalDaysUsedThisYear, setMilestoneCallback, weekTargetMs, weekTotalOtherDaysMs, allPastWorkdayOvertimeMs, stats } = useTimeTracker()
-  const { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode } = useAppSettings()
+  const { isCheckedIn, checkIn, checkOut, todaySessions, todayKey, allDays, setDaySessions, days, daysOff, setDayOffType, setDaysOffTypeBulk, replaceAll, isTodayOff, todayTargetMs, personalDaysUsedThisYear, setMilestoneCallback, weekTargetMs, weekTotalOtherDaysMs, allPastWorkdayOvertimeMs, stats } = useTimeTracker()
+  const { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode, setThemeLightColor, setThemeDarkColor, replaceSettings } = useAppSettings()
   const [view, setView] = useState<View>('tracker')
   const [selectedDay, setSelectedDay] = useState<SelectedDay | null>(null)
   const [hoursFormat, setHoursFormat] = useState<HoursFormat>(() => (preferencesService.loadHoursFormat() as HoursFormat) || 'decimal')
@@ -46,7 +46,17 @@ export default function App() {
   const { user, features, signIn, signOut } = useAuth()
   const enabledViews = new Set(features.map(feature => feature.key))
   const syncEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('cloud-sync')
-  const { lastSyncedAt, isSyncing, syncNow } = useSync({ enabled: syncEnabled, days, daysOff, settings })
+  const themesEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('themes')
+  const { lastSyncedAt, isSyncing, syncNow } = useSync({
+    enabled: syncEnabled,
+    days,
+    daysOff,
+    settings,
+    onRestore: restored => {
+      replaceAll({ days: restored.days, daysOff: restored.daysOff })
+      replaceSettings(restored.settings)
+    },
+  })
   // If the active tab's feature gets disabled out from under the user (e.g.
   // after sign-out drops an authenticated-only feature), fall back to the
   // first tab that's still enabled rather than rendering a dead tab. Settings
@@ -62,11 +72,40 @@ export default function App() {
     console.log('[features]', features)
   }, [features])
 
-  useEffect(() => {
+  // Applies the actual (non-preview) theme: check-in-driven light/dark mode,
+  // plus custom theme colors (Pro "themes" feature) overriding the default
+  // light/dark backgrounds via CSS custom properties consumed in index.css.
+  // Shared by the effect below and by endThemePreview(), which needs to
+  // restore exactly this after a hover preview ends.
+  const applyRealTheme = useCallback(() => {
     document.documentElement.dataset.theme = isCheckedIn ? 'light' : 'dark'
-    const color = isCheckedIn ? '#fffbf5' : '#1a1a2e'
+    const root = document.documentElement.style
+    if (settings.themeLightColor) root.setProperty('--bg-light-color', settings.themeLightColor)
+    else root.removeProperty('--bg-light-color')
+    if (settings.themeDarkColor) root.setProperty('--bg-dark-color', settings.themeDarkColor)
+    else root.removeProperty('--bg-dark-color')
+  }, [isCheckedIn, settings.themeLightColor, settings.themeDarkColor])
+
+  useEffect(() => {
+    applyRealTheme()
+    const color = isCheckedIn ? (settings.themeLightColor || '#fffbf5') : (settings.themeDarkColor || '#1a1a2e')
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color)
-  }, [isCheckedIn])
+  }, [applyRealTheme, isCheckedIn, settings.themeLightColor, settings.themeDarkColor])
+
+  // Hovering a theme color dropdown option (Settings page) previews it by
+  // forcing that mode and color directly onto <html>, regardless of the
+  // user's actual check-in state, so they can see it even if that mode
+  // isn't the one currently showing. endThemePreview() reverts to reality.
+  function previewTheme(mode: 'light' | 'dark', color: string | null) {
+    document.documentElement.dataset.theme = mode
+    const prop = mode === 'light' ? '--bg-light-color' : '--bg-dark-color'
+    if (color) document.documentElement.style.setProperty(prop, color)
+    else document.documentElement.style.removeProperty(prop)
+  }
+
+  function endThemePreview() {
+    applyRealTheme()
+  }
 
   function toggleHoursFormat() {
     const next = hoursFormat === 'decimal' ? 'hhmm' : 'decimal'
@@ -151,6 +190,13 @@ export default function App() {
             lastSyncedAt={lastSyncedAt}
             isSyncing={isSyncing}
             onSyncNow={() => syncNow(true)}
+            showThemes={themesEnabled}
+            themeLightColor={settings.themeLightColor}
+            themeDarkColor={settings.themeDarkColor}
+            onThemeLightColorChange={setThemeLightColor}
+            onThemeDarkColorChange={setThemeDarkColor}
+            onPreviewTheme={previewTheme}
+            onPreviewThemeEnd={endThemePreview}
           />
         )}
       </main>

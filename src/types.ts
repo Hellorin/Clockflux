@@ -31,6 +31,9 @@ export interface Settings {
   annualHolidayAllowance: number
   employmentStartDate: string | null
   holidayAccrualMode: HolidayAccrualMode
+  /** Custom theme colors (Pro "themes" feature). Null = use the app default. */
+  themeLightColor: string | null
+  themeDarkColor: string | null
 }
 
 export type Plan = 'free' | 'pro'

@@ -116,4 +116,101 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Syncing…')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Sync now' })).toBeDisabled()
   })
+
+  it('hides the Theme section by default', () => {
+    render(
+      <SettingsPage
+        allowance={24}
+        onAllowanceChange={() => {}}
+        startDate={null}
+        onStartDateChange={() => {}}
+        accrualMode="gradual"
+        onAccrualModeChange={() => {}}
+      />
+    )
+    expect(screen.queryByRole('button', { name: 'Light theme color' })).not.toBeInTheDocument()
+  })
+
+  it('shows the current pick on each dropdown trigger, defaulting to "Default" when unset', () => {
+    render(
+      <SettingsPage
+        allowance={24}
+        onAllowanceChange={() => {}}
+        startDate={null}
+        onStartDateChange={() => {}}
+        accrualMode="gradual"
+        onAccrualModeChange={() => {}}
+        showThemes
+        themeLightColor="#f0f9ff"
+        themeDarkColor={null}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: 'Light theme color' })).toHaveTextContent('Sky')
+    expect(screen.getByRole('button', { name: 'Dark theme color' })).toHaveTextContent('Default')
+  })
+
+  it('opens on click, previews an option on hover, and commits it on click', () => {
+    const onThemeLightColorChange = vi.fn()
+    const onPreviewTheme = vi.fn()
+    const onPreviewThemeEnd = vi.fn()
+    render(
+      <SettingsPage
+        allowance={24}
+        onAllowanceChange={() => {}}
+        startDate={null}
+        onStartDateChange={() => {}}
+        accrualMode="gradual"
+        onAccrualModeChange={() => {}}
+        showThemes
+        themeLightColor={null}
+        themeDarkColor={null}
+        onThemeLightColorChange={onThemeLightColorChange}
+        onThemeDarkColorChange={() => {}}
+        onPreviewTheme={onPreviewTheme}
+        onPreviewThemeEnd={onPreviewThemeEnd}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Light theme color' }))
+    const list = screen.getByRole('listbox', { name: 'Light theme color' })
+    const creamOption = screen.getByRole('option', { name: 'Cream' })
+
+    fireEvent.mouseEnter(creamOption)
+    expect(onPreviewTheme).toHaveBeenCalledWith('light', '#fffbf5')
+
+    fireEvent.mouseLeave(list)
+    expect(onPreviewThemeEnd).toHaveBeenCalledTimes(1)
+
+    fireEvent.click(creamOption)
+    expect(onThemeLightColorChange).toHaveBeenCalledWith('#fffbf5')
+    // Committing a pick closes the dropdown, which also ends the preview.
+    expect(onPreviewThemeEnd).toHaveBeenCalledTimes(2)
+    expect(screen.queryByRole('listbox', { name: 'Light theme color' })).not.toBeInTheDocument()
+  })
+
+  it('closes the dropdown and ends the preview on outside click', () => {
+    const onPreviewThemeEnd = vi.fn()
+    render(
+      <SettingsPage
+        allowance={24}
+        onAllowanceChange={() => {}}
+        startDate={null}
+        onStartDateChange={() => {}}
+        accrualMode="gradual"
+        onAccrualModeChange={() => {}}
+        showThemes
+        themeLightColor={null}
+        themeDarkColor={null}
+        onPreviewThemeEnd={onPreviewThemeEnd}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Light theme color' }))
+    expect(screen.getByRole('listbox', { name: 'Light theme color' })).toBeInTheDocument()
+
+    fireEvent.pointerDown(document.body)
+    expect(onPreviewThemeEnd).toHaveBeenCalled()
+    expect(screen.queryByRole('listbox', { name: 'Light theme color' })).not.toBeInTheDocument()
+  })
 })
