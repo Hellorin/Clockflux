@@ -9,7 +9,17 @@ interface GoogleCredentialResponse {
 }
 
 interface GoogleAccountsId {
-  initialize(config: { client_id: string; callback: (response: GoogleCredentialResponse) => void }): void
+  initialize(config: {
+    client_id: string
+    callback?: (response: GoogleCredentialResponse) => void
+    // Redirect mode: instead of a popup window handing the credential back to
+    // this callback, Google POSTs it straight to login_uri as a form (no
+    // frontend JS involved) and that endpoint redirects back into the app —
+    // the same full-page navigation on desktop that GIS already falls back
+    // to on mobile. See AuthHandler.GoogleRedirectCallback on the backend.
+    ux_mode?: 'popup' | 'redirect'
+    login_uri?: string
+  }): void
   renderButton(parent: HTMLElement, options: Record<string, unknown>): void
 }
 
@@ -57,7 +67,11 @@ export default function GoogleSignInButton({ user, onSignIn, onSignOut }: Google
       container.innerHTML = ''
       accountsId.initialize({
         client_id: clientId,
+        // Kept as a harmless fallback — GIS ignores this in redirect mode,
+        // but if it were ever invoked, wiring it through is still correct.
         callback: response => onSignIn(response.credential),
+        ux_mode: 'redirect',
+        login_uri: `${import.meta.env.VITE_API_URL}/api/v1/auth/google/callback`,
       })
       accountsId.renderButton(container, { type: 'icon', theme: 'outline', size: 'medium', shape: 'circle' })
     })

@@ -1,6 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAppSettings } from './useAppSettings'
+import * as settingsSyncService from '../services/settingsSyncService'
+
+vi.mock('../services/settingsSyncService')
 
 describe('useAppSettings', () => {
   beforeEach(() => {
@@ -109,5 +112,85 @@ describe('useAppSettings', () => {
 
     act(() => result.current.setHolidayCarryoverEnabled(false))
     expect(result.current.settings.holidayCarryoverEnabled).toBe(false)
+  })
+
+  it('makes no network calls when signed out (no accessToken)', async () => {
+    const { result } = renderHook(() => useAppSettings())
+    await act(async () => {
+      result.current.setDailyTargetHours(6)
+      await Promise.resolve()
+    })
+    expect(settingsSyncService.getServerSettings).not.toHaveBeenCalled()
+    expect(settingsSyncService.putServerSettings).not.toHaveBeenCalled()
+  })
+
+  describe('signed in (accessToken present)', () => {
+    it('adopts the server-saved settings on mount, overriding the local cache', async () => {
+      localStorage.setItem('timeforgeSettings', JSON.stringify({ dailyTargetHours: 6, themeLightColor: '#fffbf5' }))
+      vi.mocked(settingsSyncService.getServerSettings).mockResolvedValue({
+        annualHolidayAllowance: 25,
+        employmentStartDate: null,
+        holidayAccrualMode: 'gradual',
+        themeLightColor: null,
+        themeDarkColor: null,
+        dailyTargetHours: 8,
+        holidayCarryoverEnabled: false,
+      })
+
+      const { result } = renderHook(() => useAppSettings('token-123'))
+      await act(async () => {
+        await Promise.resolve()
+      })
+
+      expect(settingsSyncService.getServerSettings).toHaveBeenCalledWith('token-123')
+      // The server's (free-plan) truth wins over the locally cached Pro-looking values.
+      expect(result.current.settings.dailyTargetHours).toBe(8)
+      expect(result.current.settings.themeLightColor).toBeNull()
+      expect(JSON.parse(localStorage.getItem('timeforgeSettings')!).dailyTargetHours).toBe(8)
+    })
+
+    it('reconciles down to whatever the server actually persisted after a write', async () => {
+      vi.mocked(settingsSyncService.getServerSettings).mockResolvedValue(null)
+      // Even though the caller asks for a Pro-only value, the server clamps it
+      // back to the default (e.g. the caller's real plan doesn't unlock it) —
+      // the hook must end up reflecting that, not the optimistic local value.
+      vi.mocked(settingsSyncService.putServerSettings).mockResolvedValue({
+        annualHolidayAllowance: 25,
+        employmentStartDate: null,
+        holidayAccrualMode: 'gradual',
+        themeLightColor: null,
+        themeDarkColor: null,
+        dailyTargetHours: 8,
+        holidayCarryoverEnabled: false,
+      })
+
+      const { result } = renderHook(() => useAppSettings('token-123'))
+      act(() => result.current.setDailyTargetHours(6))
+
+      // Optimistic update applies immediately.
+      expect(result.current.settings.dailyTargetHours).toBe(6)
+      expect(settingsSyncService.putServerSettings).toHaveBeenCalledWith('token-123', expect.objectContaining({ dailyTargetHours: 6 }))
+
+      await act(async () => {
+        await Promise.resolve()
+      })
+
+      // Once the server responds, its clamped value is what sticks.
+      expect(result.current.settings.dailyTargetHours).toBe(8)
+      expect(JSON.parse(localStorage.getItem('timeforgeSettings')!).dailyTargetHours).toBe(8)
+    })
+
+    it('keeps the optimistic local value when the request fails (offline)', async () => {
+      vi.mocked(settingsSyncService.getServerSettings).mockResolvedValue(null)
+      vi.mocked(settingsSyncService.putServerSettings).mockResolvedValue(null)
+
+      const { result } = renderHook(() => useAppSettings('token-123'))
+      await act(async () => {
+        result.current.setDailyTargetHours(6)
+        await Promise.resolve()
+      })
+
+      expect(result.current.settings.dailyTargetHours).toBe(6)
+    })
   })
 })

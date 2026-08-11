@@ -38,14 +38,17 @@ interface SelectedDay {
 }
 
 export default function App() {
-  const { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode, setDailyTargetHours, setHolidayCarryoverEnabled, setThemeLightColor, setThemeDarkColor, replaceSettings } = useAppSettings()
   const [view, setView] = useState<View>('tracker')
   const [selectedDay, setSelectedDay] = useState<SelectedDay | null>(null)
   const [hoursFormat, setHoursFormat] = useState<HoursFormat>(() => (preferencesService.loadHoursFormat() as HoursFormat) || 'decimal')
   const [celebrationMilestone, setCelebrationMilestone] = useState<Milestone | null>(null)
   const aboutBtnRef = useRef<HTMLButtonElement>(null)
   const { isLandingOpen, openLanding } = useLandingPage({ returnFocusRef: aboutBtnRef })
-  const { user, features, signIn, signOut } = useAuth()
+  const { user, features, accessToken, signIn, signOut } = useAuth()
+  // Settings round-trip through the server-validated /api/v1/settings
+  // endpoint whenever signed in (see useAppSettings), which is what actually
+  // enforces the Pro-only fields below against the caller's real plan.
+  const { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode, setDailyTargetHours, setHolidayCarryoverEnabled, setThemeLightColor, setThemeDarkColor, replaceSettings } = useAppSettings(accessToken)
   const enabledViews = new Set(features.map(feature => feature.key))
   const syncEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('cloud-sync')
   const themesEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('themes')

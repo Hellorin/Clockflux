@@ -68,3 +68,30 @@ export async function signInWithGoogle(credential: string): Promise<AuthUser | n
     return null
   }
 }
+
+/**
+ * Exchanges the httpOnly refresh-token cookie (set by signInWithGoogle or a
+ * prior call to this) for a new access token at /api/v1/auth/refresh, so a
+ * session can outlive the short-lived (~15 minute) access token without
+ * asking the user to sign in again. The refresh token itself is never
+ * visible to JS — the browser attaches it automatically via
+ * credentials: 'include'. Returns null if there's no valid refresh token
+ * (expired, revoked, or never signed in) or the request fails for any other
+ * reason; callers should treat null as "no longer signed in".
+ */
+export async function refreshAccessToken(): Promise<AuthUser | null> {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+    if (!response.ok) return null
+    const { user, accessToken } = (await response.json()) as Partial<AuthResponse>
+    if (!isAuthUser(user) || typeof accessToken !== 'string') return null
+    saveUser(user)
+    resolveRepository().saveAccessToken(accessToken)
+    return user
+  } catch {
+    return null
+  }
+}
