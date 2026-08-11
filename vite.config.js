@@ -34,7 +34,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         // Without this the service worker answers navigations to these paths
         // with the SPA shell instead of the real files.
-        navigateFallbackDenylist: [/^\/robots\.txt$/, /^\/sitemap\.xml$/, /^\/tools\//]
+        navigateFallbackDenylist: [/^\/robots\.txt$/, /^\/sitemap\.xml$/]
       }
     })
   ],
