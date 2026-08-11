@@ -87,7 +87,7 @@ describe('HolidayPage', () => {
     expect(screen.queryByText(/carried over/)).not.toBeInTheDocument()
   })
 
-  it('shows a Pro upsell note when carryover is not enabled', () => {
+  it('shows a Pro upsell note when carryover is not enabled and plan gating is active', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2024-06-15T12:00:00'))
     render(
@@ -97,6 +97,7 @@ describe('HolidayPage', () => {
         allowance={24}
         startDate="2024-01-01"
         accrualMode="immediate"
+        planGatingActive
       />
     )
     expect(screen.getByText(/Free plan: unused days don't carry over/)).toBeInTheDocument()
@@ -114,9 +115,27 @@ describe('HolidayPage', () => {
         startDate="2024-01-01"
         accrualMode="immediate"
         carryoverAvailable
+        planGatingActive
       />
     )
     expect(screen.getByText(/turn on carryover in Settings/)).toBeInTheDocument()
     expect(screen.queryByText(/Free plan: unused days don't carry over/)).not.toBeInTheDocument()
+  })
+
+  it('omits the Free/Pro plan note entirely when plan gating is not active', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2024-06-15T12:00:00'))
+    render(
+      <HolidayPage
+        used={2}
+        daysOff={{}}
+        allowance={24}
+        startDate="2024-01-01"
+        accrualMode="immediate"
+      />
+    )
+    expect(screen.queryByText(/Free plan: unused days don't carry over/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/turn on carryover in Settings/)).not.toBeInTheDocument()
+    expect(screen.queryByText('✦')).not.toBeInTheDocument()
   })
 })

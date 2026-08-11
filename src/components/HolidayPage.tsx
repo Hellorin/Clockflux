@@ -16,9 +16,11 @@ interface HolidayPageProps {
   carryoverEnabled?: boolean
   /** Whether the caller's plan unlocks holiday carryover at all, regardless of whether they've switched it on yet. Distinguishes "Pro, but off" from "not Pro" in the note below. */
   carryoverAvailable?: boolean
+  /** Whether paid-plan gating is active at all (i.e. VITE_ENABLE_PAID_FEATURES). When false there's no Free/Pro distinction to report, so the note below is omitted entirely instead of defaulting to the "Free plan" message. */
+  planGatingActive?: boolean
 }
 
-export default function HolidayPage({ used, daysOff, allowance, startDate, accrualMode, carryoverEnabled = false, carryoverAvailable = false }: HolidayPageProps) {
+export default function HolidayPage({ used, daysOff, allowance, startDate, accrualMode, carryoverEnabled = false, carryoverAvailable = false, planGatingActive = false }: HolidayPageProps) {
   return (
     <section className="holiday-page">
       <HolidayBalanceCard
@@ -29,12 +31,13 @@ export default function HolidayPage({ used, daysOff, allowance, startDate, accru
         accrualMode={accrualMode}
         carryoverEnabled={carryoverEnabled}
         carryoverAvailable={carryoverAvailable}
+        planGatingActive={planGatingActive}
       />
     </section>
   )
 }
 
-function HolidayBalanceCard({ used, daysOff, allowance, startDate, accrualMode, carryoverEnabled = false, carryoverAvailable = false }: HolidayPageProps) {
+function HolidayBalanceCard({ used, daysOff, allowance, startDate, accrualMode, carryoverEnabled = false, carryoverAvailable = false, planGatingActive = false }: HolidayPageProps) {
   const year = useMemo(() => new Date().getFullYear(), [])
   const todayKey = getTodayKey()
 
@@ -103,15 +106,15 @@ function HolidayBalanceCard({ used, daysOff, allowance, startDate, accrualMode, 
         <p className="settings-note holiday-carryover-note">
           <span className="settings-sync-star" aria-hidden="true">✦</span> Your unused days will carry over into the new year
         </p>
-      ) : carryoverAvailable ? (
+      ) : planGatingActive && carryoverAvailable ? (
         <p className="settings-note holiday-carryover-note">
           <span className="settings-sync-star" aria-hidden="true">✦</span> Pro: turn on carryover in Settings to keep your unused days next year
         </p>
-      ) : (
+      ) : planGatingActive ? (
         <p className="settings-note holiday-carryover-note">
           Free plan: unused days don't carry over — <span className="settings-sync-star" aria-hidden="true">✦</span> Pro carries them into the new year.
         </p>
-      )}
+      ) : null}
       <HolidayChart daysOff={daysOff} allowance={allowance} startDate={startDate} accrualMode={accrualMode} carryoverDays={carryover} />
     </div>
   )

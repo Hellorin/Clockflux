@@ -226,6 +226,7 @@ export default function App() {
             accrualMode={settings.holidayAccrualMode}
             carryoverEnabled={carryoverActive}
             carryoverAvailable={holidayCarryoverFeatureEnabled}
+            planGatingActive={paidGatingActive}
           />
         )}
         {activeView === 'health' && (
