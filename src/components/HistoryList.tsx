@@ -9,6 +9,7 @@ interface HistoryListProps {
   todayKey: string
   hoursFormat: HoursFormat
   daysOff?: DaysOffMap
+  dailyTargetHours?: number
 }
 
 function toDateKey(date: Date): string {
@@ -93,9 +94,10 @@ interface HistoryWeekProps {
   daysOff: DaysOffMap
   isCurrentWeek: boolean
   cumulativeOvertimeBeforeMs: number
+  dailyTargetHours: number
 }
 
-function HistoryWeek({ weekKey, days, todayKey, hoursFormat, defaultExpanded, daysOff, isCurrentWeek, cumulativeOvertimeBeforeMs }: HistoryWeekProps) {
+function HistoryWeek({ weekKey, days, todayKey, hoursFormat, defaultExpanded, daysOff, isCurrentWeek, cumulativeOvertimeBeforeMs, dailyTargetHours }: HistoryWeekProps) {
   const [expanded, setExpanded] = useState(defaultExpanded)
   const totalMs = days.reduce((sum, d) => sum + d.totalMs, 0)
   const label = getWeekLabel(weekKey)
@@ -103,7 +105,7 @@ function HistoryWeek({ weekKey, days, todayKey, hoursFormat, defaultExpanded, da
   const [y, m, d] = weekKey.split('-').map(Number)
   const weekdays = getWeekDays(new Date(y, m - 1, d)).slice(0, 5)
   const daysOffSum = weekdays.reduce((sum, date) => sum + dayOffFraction(daysOff[toDateKey(date)]), 0)
-  const weekTargetMs = (5 - daysOffSum) * 8 * 3600000
+  const weekTargetMs = (5 - daysOffSum) * dailyTargetHours * 3600000
 
   type WeekStatus = 'pending' | 'success' | 'partial' | 'fail'
   let status: WeekStatus = 'pending'
@@ -154,7 +156,7 @@ function HistoryWeek({ weekKey, days, todayKey, hoursFormat, defaultExpanded, da
   )
 }
 
-export default function HistoryList({ allDays, todayKey, hoursFormat, daysOff = {} }: HistoryListProps) {
+export default function HistoryList({ allDays, todayKey, hoursFormat, daysOff = {}, dailyTargetHours = 8 }: HistoryListProps) {
   const currentWeekKey = getWeekKey(todayKey)
   const [currentYear, currentMonth] = todayKey.split('-').map(Number)
 
@@ -170,7 +172,7 @@ export default function HistoryList({ allDays, todayKey, hoursFormat, daysOff = 
         const [y, m, d] = wk.split('-').map(Number)
         const weekdays = getWeekDays(new Date(y, m - 1, d)).slice(0, 5)
         const daysOffSum = weekdays.reduce((sum, date) => sum + dayOffFraction(daysOff[toDateKey(date)]), 0)
-        weekData.set(wk, { totalMs: 0, targetMs: (5 - daysOffSum) * 8 * 3600000 })
+        weekData.set(wk, { totalMs: 0, targetMs: (5 - daysOffSum) * dailyTargetHours * 3600000 })
       }
       weekData.get(wk).totalMs += day.totalMs
     }
@@ -182,7 +184,7 @@ export default function HistoryList({ allDays, todayKey, hoursFormat, daysOff = 
       running += totalMs - targetMs
     }
     return map
-  }, [allDays, daysOff])
+  }, [allDays, daysOff, dailyTargetHours])
 
   const hasActiveSession = historyDays.some(d => d.sessions.some(s => s.checkOut === null))
   const [now, setNow] = useState(Date.now)
@@ -242,6 +244,7 @@ export default function HistoryList({ allDays, todayKey, hoursFormat, daysOff = 
             daysOff={daysOff}
             isCurrentWeek={weekKey === currentWeekKey}
             cumulativeOvertimeBeforeMs={cumulativeOvertimeMap.get(weekKey) ?? 0}
+            dailyTargetHours={dailyTargetHours}
           />
         ))}
       </ul>

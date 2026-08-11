@@ -146,6 +146,7 @@ describe('SettingsPage', () => {
       />
     )
 
+    fireEvent.click(screen.getByRole('button', { name: 'Theme' }))
     expect(screen.getByRole('button', { name: 'Light theme color' })).toHaveTextContent('Sky')
     expect(screen.getByRole('button', { name: 'Dark theme color' })).toHaveTextContent('Default')
   })
@@ -172,6 +173,7 @@ describe('SettingsPage', () => {
       />
     )
 
+    fireEvent.click(screen.getByRole('button', { name: 'Theme' }))
     fireEvent.click(screen.getByRole('button', { name: 'Light theme color' }))
     const list = screen.getByRole('listbox', { name: 'Light theme color' })
     const creamOption = screen.getByRole('option', { name: 'Cream' })
@@ -206,6 +208,7 @@ describe('SettingsPage', () => {
       />
     )
 
+    fireEvent.click(screen.getByRole('button', { name: 'Theme' }))
     fireEvent.click(screen.getByRole('button', { name: 'Light theme color' }))
     expect(screen.getByRole('listbox', { name: 'Light theme color' })).toBeInTheDocument()
 

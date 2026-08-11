@@ -35,8 +35,8 @@ interface SelectedDay {
 }
 
 export default function App() {
-  const { isCheckedIn, checkIn, checkOut, todaySessions, todayKey, allDays, setDaySessions, days, daysOff, setDayOffType, setDaysOffTypeBulk, replaceAll, isTodayOff, todayTargetMs, personalDaysUsedThisYear, setMilestoneCallback, weekTargetMs, weekTotalOtherDaysMs, allPastWorkdayOvertimeMs, stats } = useTimeTracker()
-  const { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode, setThemeLightColor, setThemeDarkColor, replaceSettings } = useAppSettings()
+  const { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode, setDailyTargetHours, setThemeLightColor, setThemeDarkColor, replaceSettings } = useAppSettings()
+  const { isCheckedIn, checkIn, checkOut, todaySessions, todayKey, allDays, setDaySessions, days, daysOff, setDayOffType, setDaysOffTypeBulk, replaceAll, isTodayOff, todayTargetMs, personalDaysUsedThisYear, setMilestoneCallback, weekTargetMs, weekTotalOtherDaysMs, allPastWorkdayOvertimeMs, stats } = useTimeTracker(settings.dailyTargetHours)
   const [view, setView] = useState<View>('tracker')
   const [selectedDay, setSelectedDay] = useState<SelectedDay | null>(null)
   const [hoursFormat, setHoursFormat] = useState<HoursFormat>(() => (preferencesService.loadHoursFormat() as HoursFormat) || 'decimal')
@@ -47,6 +47,7 @@ export default function App() {
   const enabledViews = new Set(features.map(feature => feature.key))
   const syncEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('cloud-sync')
   const themesEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('themes')
+  const dailyTargetEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('custom-daily-target')
   const { lastSyncedAt, isSyncing, syncNow } = useSync({
     enabled: syncEnabled,
     days,
@@ -150,7 +151,7 @@ export default function App() {
             />
             <LiveTimer isCheckedIn={isCheckedIn} todaySessions={todaySessions} />
             <TodaySummary todaySessions={todaySessions} hoursFormat={hoursFormat} onToggleFormat={toggleHoursFormat} isTodayOff={isTodayOff} todayTargetMs={todayTargetMs} weekTargetMs={weekTargetMs} weekTotalOtherDaysMs={weekTotalOtherDaysMs} allPastWorkdayOvertimeMs={allPastWorkdayOvertimeMs} />
-            <HistoryList allDays={allDays} todayKey={todayKey} hoursFormat={hoursFormat} daysOff={daysOff} />
+            <HistoryList allDays={allDays} todayKey={todayKey} hoursFormat={hoursFormat} daysOff={daysOff} dailyTargetHours={settings.dailyTargetHours} />
           </>
         )}
         {activeView === 'calendar' && (
@@ -159,6 +160,7 @@ export default function App() {
             daysOff={daysOff}
             onDayClick={(key, dayData) => setSelectedDay({ dateKey: key, sessions: dayData?.sessions ?? [] })}
             onBulkSetDaysOffType={setDaysOffTypeBulk}
+            dailyTargetHours={settings.dailyTargetHours}
           />
         )}
         {activeView === 'holiday' && (
@@ -197,6 +199,9 @@ export default function App() {
             onThemeDarkColorChange={setThemeDarkColor}
             onPreviewTheme={previewTheme}
             onPreviewThemeEnd={endThemePreview}
+            showDailyTarget={dailyTargetEnabled}
+            dailyTargetHours={settings.dailyTargetHours}
+            onDailyTargetHoursChange={setDailyTargetHours}
           />
         )}
       </main>

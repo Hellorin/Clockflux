@@ -9,6 +9,7 @@ const DEFAULTS: Settings = {
   holidayAccrualMode: 'gradual',
   themeLightColor: null,
   themeDarkColor: null,
+  dailyTargetHours: 8,
 }
 
 function loadSettings(): Settings {
@@ -51,6 +52,15 @@ export function useAppSettings() {
     })
   }, [])
 
+  const setDailyTargetHours = useCallback((value: number | string) => {
+    const n = Math.max(0, Number(value) || 0)
+    setSettings(prev => {
+      const next = { ...prev, dailyTargetHours: n }
+      settingsService.saveSettings(next)
+      return next
+    })
+  }, [])
+
   const setThemeLightColor = useCallback((value: string | null) => {
     const v = isValidLightThemeColor(value) ? value : null
     setSettings(prev => {
@@ -79,5 +89,5 @@ export function useAppSettings() {
     setSettings(merged)
   }, [])
 
-  return { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode, setThemeLightColor, setThemeDarkColor, replaceSettings }
+  return { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode, setDailyTargetHours, setThemeLightColor, setThemeDarkColor, replaceSettings }
 }

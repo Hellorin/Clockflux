@@ -15,6 +15,7 @@ describe('useAppSettings', () => {
       holidayAccrualMode: 'gradual',
       themeLightColor: null,
       themeDarkColor: null,
+      dailyTargetHours: 8,
     })
   })
 
@@ -80,5 +81,20 @@ describe('useAppSettings', () => {
 
     act(() => result.current.setThemeDarkColor(null))
     expect(result.current.settings.themeDarkColor).toBeNull()
+  })
+
+  it('sets and persists the daily target hours, clamping to 0', () => {
+    const { result } = renderHook(() => useAppSettings())
+    act(() => result.current.setDailyTargetHours(6.5))
+    expect(result.current.settings.dailyTargetHours).toBe(6.5)
+
+    act(() => result.current.setDailyTargetHours(-3))
+    expect(result.current.settings.dailyTargetHours).toBe(0)
+
+    act(() => result.current.setDailyTargetHours('not-a-number'))
+    expect(result.current.settings.dailyTargetHours).toBe(0)
+
+    const stored = JSON.parse(localStorage.getItem('timeforgeSettings')!)
+    expect(stored.dailyTargetHours).toBe(0)
   })
 })

@@ -11,6 +11,7 @@ interface CalendarViewProps {
   onDayClick: (key: string, dayData: DayEntry | null) => void
   daysOff?: DaysOffMap
   onBulkSetDaysOffType?: (dateKeys: string[], type: DayOffType | null) => void
+  dailyTargetHours?: number
 }
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -72,7 +73,7 @@ function weekColor(totalMs: number, targetMs: number): string | null {
   return null
 }
 
-export default function CalendarView({ allDays, onDayClick, daysOff = {}, onBulkSetDaysOffType }: CalendarViewProps) {
+export default function CalendarView({ allDays, onDayClick, daysOff = {}, onBulkSetDaysOffType, dailyTargetHours = 8 }: CalendarViewProps) {
   const today = getTodayKey()
   const [year, month] = (() => {
     const d = new Date()
@@ -215,7 +216,7 @@ export default function CalendarView({ allDays, onDayClick, daysOff = {}, onBulk
           const weekTotal = weekTotalMs / 3600000
           // row[0..4] = Mon–Fri; only weekdays count toward target
           const daysOffSum = row.slice(0, 5).reduce((sum, d) => sum + dayOffFraction(daysOff[toDateKey(d)]), 0)
-          const weekTarget = (5 - daysOffSum) * 8
+          const weekTarget = (5 - daysOffSum) * dailyTargetHours
 
           // For the current week, prorate the target based on workdays elapsed so far
           const isCurrentWeek = row.some(date => toDateKey(date) === today)
@@ -226,7 +227,7 @@ export default function CalendarView({ allDays, onDayClick, daysOff = {}, onBulk
               if (isWeekend(key) || key > today) return sum
               return sum + (1 - dayOffFraction(daysOff[key]))
             }, 0)
-            effectiveTarget = daysElapsed * 8
+            effectiveTarget = daysElapsed * dailyTargetHours
           }
 
           const effectiveTargetMs = effectiveTarget * 3600000

@@ -11,7 +11,7 @@ const ENTRY_DEBOUNCE_MS = 800
 const SETTINGS_DEBOUNCE_MS = 5000
 const HOUR_MS = 60 * 60 * 1000
 
-const settings = { annualHolidayAllowance: 25, employmentStartDate: null, holidayAccrualMode: 'gradual' as const, themeLightColor: null, themeDarkColor: null }
+const settings = { annualHolidayAllowance: 25, employmentStartDate: null, holidayAccrualMode: 'gradual' as const, themeLightColor: null, themeDarkColor: null, dailyTargetHours: 8 }
 
 function baseArgs(overrides: Partial<Parameters<typeof useSync>[0]> = {}) {
   return { enabled: true, days: {}, daysOff: {}, settings, onRestore: vi.fn(), ...overrides }

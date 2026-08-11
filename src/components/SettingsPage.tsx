@@ -26,9 +26,13 @@ interface SettingsPageProps {
   onPreviewTheme?: (mode: 'light' | 'dark', color: string | null) => void
   /** Ends a preview, reverting to the actually-selected theme. */
   onPreviewThemeEnd?: () => void
+  /** Custom daily target (Pro "custom-daily-target" feature). */
+  showDailyTarget?: boolean
+  dailyTargetHours?: number
+  onDailyTargetHoursChange?: (value: number | string) => void
 }
 
-export default function SettingsPage({ allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange, showSync = false, lastSyncedAt = null, isSyncing = false, onSyncNow, showThemes = false, themeLightColor = null, themeDarkColor = null, onThemeLightColorChange, onThemeDarkColorChange, onPreviewTheme, onPreviewThemeEnd }: SettingsPageProps) {
+export default function SettingsPage({ allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange, showSync = false, lastSyncedAt = null, isSyncing = false, onSyncNow, showThemes = false, themeLightColor = null, themeDarkColor = null, onThemeLightColorChange, onThemeDarkColorChange, onPreviewTheme, onPreviewThemeEnd, showDailyTarget = false, dailyTargetHours = 8, onDailyTargetHoursChange }: SettingsPageProps) {
   const year = useMemo(() => new Date().getFullYear(), [])
   const proratedAllowance = getProratedAllowance(startDate, allowance, year)
   const isProrated = startDate && proratedAllowance !== allowance
@@ -67,7 +71,7 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
       )}
 
       {showThemes && (
-        <SettingsSection title={<><span className="settings-sync-star" aria-hidden="true">✦</span> Theme</>} collapsible={false}>
+        <SettingsSection title={<><span className="settings-sync-star" aria-hidden="true">✦</span> Theme</>}>
           <div className="settings-field">
             <span className="settings-field-label">Light color</span>
             <ThemeColorDropdown
@@ -90,6 +94,26 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
                 onPreviewEnd={() => onPreviewThemeEnd?.()}
             />
           </div>
+        </SettingsSection>
+      )}
+
+      {showDailyTarget && (
+        <SettingsSection title={<><span className="settings-sync-star" aria-hidden="true">✦</span> Daily target</>}>
+          <label className="settings-field">
+            <span className="settings-field-label">Hours per day</span>
+            <span className="settings-field-control">
+              <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  className="settings-field-input"
+                  value={dailyTargetHours}
+                  onChange={e => onDailyTargetHoursChange?.(e.target.value)}
+                  aria-label="Daily target hours"
+              />
+              <span className="settings-field-suffix">hrs/day</span>
+            </span>
+          </label>
         </SettingsSection>
       )}
 
