@@ -30,9 +30,13 @@ interface SettingsPageProps {
   showDailyTarget?: boolean
   dailyTargetHours?: number
   onDailyTargetHoursChange?: (value: number | string) => void
+  /** Carry over unused days into the new year (Pro "holiday-carryover" feature). */
+  showHolidayCarryover?: boolean
+  holidayCarryoverEnabled?: boolean
+  onHolidayCarryoverEnabledChange?: (value: boolean) => void
 }
 
-export default function SettingsPage({ allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange, showSync = false, lastSyncedAt = null, isSyncing = false, onSyncNow, showThemes = false, themeLightColor = null, themeDarkColor = null, onThemeLightColorChange, onThemeDarkColorChange, onPreviewTheme, onPreviewThemeEnd, showDailyTarget = false, dailyTargetHours = 8, onDailyTargetHoursChange }: SettingsPageProps) {
+export default function SettingsPage({ allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange, showSync = false, lastSyncedAt = null, isSyncing = false, onSyncNow, showThemes = false, themeLightColor = null, themeDarkColor = null, onThemeLightColorChange, onThemeDarkColorChange, onPreviewTheme, onPreviewThemeEnd, showDailyTarget = false, dailyTargetHours = 8, onDailyTargetHoursChange, showHolidayCarryover = false, holidayCarryoverEnabled = false, onHolidayCarryoverEnabledChange }: SettingsPageProps) {
   const year = useMemo(() => new Date().getFullYear(), [])
   const proratedAllowance = getProratedAllowance(startDate, allowance, year)
   const isProrated = startDate && proratedAllowance !== allowance
@@ -167,6 +171,19 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
             <p className="settings-note">
               Prorated from {formatStartDate(startDate)} ({formatHolidayDays(proratedAllowance)} of {allowance} days)
             </p>
+        )}
+        {showHolidayCarryover && (
+          <label className="settings-field">
+            <span className="settings-field-label">
+              <span className="settings-sync-star" aria-hidden="true">✦</span> Carry over unused days
+            </span>
+            <input
+                type="checkbox"
+                checked={holidayCarryoverEnabled}
+                onChange={e => onHolidayCarryoverEnabledChange?.(e.target.checked)}
+                aria-label="Carry over unused holiday days into the new year"
+            />
+          </label>
         )}
       </SettingsSection>
     </section>

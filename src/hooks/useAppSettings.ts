@@ -10,6 +10,7 @@ const DEFAULTS: Settings = {
   themeLightColor: null,
   themeDarkColor: null,
   dailyTargetHours: 8,
+  holidayCarryoverEnabled: false,
 }
 
 function loadSettings(): Settings {
@@ -61,6 +62,14 @@ export function useAppSettings() {
     })
   }, [])
 
+  const setHolidayCarryoverEnabled = useCallback((value: boolean) => {
+    setSettings(prev => {
+      const next = { ...prev, holidayCarryoverEnabled: !!value }
+      settingsService.saveSettings(next)
+      return next
+    })
+  }, [])
+
   const setThemeLightColor = useCallback((value: string | null) => {
     const v = isValidLightThemeColor(value) ? value : null
     setSettings(prev => {
@@ -89,5 +98,5 @@ export function useAppSettings() {
     setSettings(merged)
   }, [])
 
-  return { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode, setDailyTargetHours, setThemeLightColor, setThemeDarkColor, replaceSettings }
+  return { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode, setDailyTargetHours, setHolidayCarryoverEnabled, setThemeLightColor, setThemeDarkColor, replaceSettings }
 }

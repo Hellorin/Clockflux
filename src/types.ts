@@ -36,6 +36,8 @@ export interface Settings {
   themeDarkColor: string | null
   /** Expected work hours per day (Pro "custom-daily-target" feature). Defaults to 8. */
   dailyTargetHours: number
+  /** Carry unused holiday days into the new year (Pro "holiday-carryover" feature). */
+  holidayCarryoverEnabled: boolean
 }
 
 export type Plan = 'free' | 'pro'

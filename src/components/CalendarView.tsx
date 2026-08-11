@@ -19,6 +19,10 @@ interface CalendarViewProps {
   exportPdfEnabled?: boolean
   exportIcsEnabled?: boolean
   onExportRange?: (format: ExportFormat, startDate: string, endDate: string) => Promise<boolean>
+  /** Free plan ('limited'): keeps calendar navigation within the current
+   *  year — data for other years still exists in storage, it's just not
+   *  reachable from here. null when paid gating isn't active at all. */
+  historyScope?: 'limited' | 'unlimited' | null
 }
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -80,14 +84,17 @@ function weekColor(totalMs: number, targetMs: number): string | null {
   return null
 }
 
-export default function CalendarView({ allDays, onDayClick, daysOff = {}, onBulkSetDaysOffType, dailyTargetHours = 8, exportCsvEnabled = false, exportPdfEnabled = false, exportIcsEnabled = false, onExportRange }: CalendarViewProps) {
+export default function CalendarView({ allDays, onDayClick, daysOff = {}, onBulkSetDaysOffType, dailyTargetHours = 8, exportCsvEnabled = false, exportPdfEnabled = false, exportIcsEnabled = false, onExportRange, historyScope = null }: CalendarViewProps) {
   const exportEnabled = exportCsvEnabled || exportPdfEnabled || exportIcsEnabled
+  const restrictToCurrentYear = historyScope === 'limited'
   const today = getTodayKey()
   const [year, month] = (() => {
     const d = new Date()
     return [d.getFullYear(), d.getMonth()]
   })()
   const [currentMonth, setCurrentMonth] = useState({ year, month })
+  const atMinBound = restrictToCurrentYear && currentMonth.year <= year && currentMonth.month === 0
+  const atMaxBound = restrictToCurrentYear && currentMonth.year >= year && currentMonth.month === 11
   const [hoveredDay, setHoveredDay] = useState<string | null>(null)
   const touchStartRef = useRef<{ x: number, y: number } | null>(null)
   const [selectMode, setSelectMode] = useState(false)
@@ -130,6 +137,7 @@ export default function CalendarView({ allDays, onDayClick, daysOff = {}, onBulk
   )
 
   function prevMonth() {
+    if (atMinBound) return
     setCurrentMonth(({ year, month }) => {
       if (month === 0) return { year: year - 1, month: 11 }
       return { year, month: month - 1 }
@@ -137,6 +145,7 @@ export default function CalendarView({ allDays, onDayClick, daysOff = {}, onBulk
   }
 
   function nextMonth() {
+    if (atMaxBound) return
     setCurrentMonth(({ year, month }) => {
       if (month === 11) return { year: year + 1, month: 0 }
       return { year, month: month + 1 }
@@ -190,11 +199,11 @@ export default function CalendarView({ allDays, onDayClick, daysOff = {}, onBulk
     <div className="cal-container">
       <div className="cal-nav">
         <div className="cal-nav-group">
-          <button type="button" className="cal-nav-btn" onClick={prevMonth} aria-label="Previous month">‹</button>
+          <button type="button" className="cal-nav-btn" onClick={prevMonth} disabled={atMinBound} aria-label="Previous month" title={atMinBound ? 'Upgrade to Pro to view past years' : undefined}>‹</button>
           <span className="cal-month-label">
             {getMonthLabel(currentMonth.year, currentMonth.month)}
           </span>
-          <button type="button" className="cal-nav-btn" onClick={nextMonth} aria-label="Next month">›</button>
+          <button type="button" className="cal-nav-btn" onClick={nextMonth} disabled={atMaxBound} aria-label="Next month">›</button>
         </div>
         <div className="cal-nav-actions">
           <button
@@ -220,6 +229,12 @@ export default function CalendarView({ allDays, onDayClick, daysOff = {}, onBulk
           )}
         </div>
       </div>
+
+      {(atMinBound || atMaxBound) && (
+        <p className="settings-note cal-scope-note">
+          Free plan shows {year} only — <span className="settings-sync-star" aria-hidden="true">✦</span> Pro unlocks past and future years.
+        </p>
+      )}
 
       {exportEnabled && exportPanelOpen && (
         <div className="cal-export-panel" role="region" aria-label="Export date range">

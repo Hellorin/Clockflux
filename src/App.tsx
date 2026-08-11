@@ -38,8 +38,7 @@ interface SelectedDay {
 }
 
 export default function App() {
-  const { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode, setDailyTargetHours, setThemeLightColor, setThemeDarkColor, replaceSettings } = useAppSettings()
-  const { isCheckedIn, checkIn, checkOut, todaySessions, todayKey, allDays, setDaySessions, days, daysOff, setDayOffType, setDaysOffTypeBulk, replaceAll, isTodayOff, todayTargetMs, personalDaysUsedThisYear, setMilestoneCallback, weekTargetMs, weekTotalOtherDaysMs, allPastWorkdayOvertimeMs, stats } = useTimeTracker(settings.dailyTargetHours)
+  const { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode, setDailyTargetHours, setHolidayCarryoverEnabled, setThemeLightColor, setThemeDarkColor, replaceSettings } = useAppSettings()
   const [view, setView] = useState<View>('tracker')
   const [selectedDay, setSelectedDay] = useState<SelectedDay | null>(null)
   const [hoursFormat, setHoursFormat] = useState<HoursFormat>(() => (preferencesService.loadHoursFormat() as HoursFormat) || 'decimal')
@@ -51,9 +50,30 @@ export default function App() {
   const syncEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('cloud-sync')
   const themesEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('themes')
   const dailyTargetEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('custom-daily-target')
+  // Whether the caller's plan unlocks the feature at all, vs. settings.holidayCarryoverEnabled
+  // below which is whether they've actually switched it on in Settings.
+  const holidayCarryoverFeatureEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('holiday-carryover')
+  const carryoverActive = holidayCarryoverFeatureEnabled && settings.holidayCarryoverEnabled
   const exportCsvEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('export-csv')
   const exportPdfEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('export-pdf')
   const exportIcsEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('export-ics')
+  // Free plan is capped to the current year everywhere history is read back
+  // (History, Calendar, Health, cumulative overtime) — storage and sync
+  // still keep every year, see useTimeTracker's unlimitedHistory param.
+  // Unlike the additive flags above, this one *removes* something that
+  // already works today, so — matching "nothing is paid-gated yet" — it
+  // only takes effect once the paid-features system is actually switched on;
+  // with it off, everyone keeps the unrestricted behavior they have now.
+  const paidGatingActive = AUTH_ENABLED && PAID_FEATURES_ENABLED
+  const unlimitedHistoryEnabled = !paidGatingActive || (user?.plan === 'pro' && enabledViews.has('unlimited-history'))
+  // Null when paid gating isn't active at all (nothing to report — everyone's
+  // unrestricted and there's no plan to contrast it with). Otherwise tells
+  // History/Calendar/Health whether to surface the current-year cap or a
+  // "you have full history" confirmation.
+  const historyScope: 'limited' | 'unlimited' | null = paidGatingActive
+    ? (unlimitedHistoryEnabled ? 'unlimited' : 'limited')
+    : null
+  const { isCheckedIn, checkIn, checkOut, todaySessions, todayKey, allDays, setDaySessions, days, daysOff, setDayOffType, setDaysOffTypeBulk, replaceAll, isTodayOff, todayTargetMs, personalDaysUsedThisYear, setMilestoneCallback, weekTargetMs, weekTotalOtherDaysMs, allPastWorkdayOvertimeMs, stats } = useTimeTracker(settings.dailyTargetHours, unlimitedHistoryEnabled)
   const { lastSyncedAt, isSyncing, syncNow } = useSync({
     enabled: syncEnabled,
     days,
@@ -191,6 +211,7 @@ export default function App() {
             exportPdfEnabled={exportPdfEnabled}
             exportIcsEnabled={exportIcsEnabled}
             onExportRange={exportRange}
+            historyScope={historyScope}
           />
         )}
         {activeView === 'holiday' && (
@@ -200,6 +221,8 @@ export default function App() {
             allowance={settings.annualHolidayAllowance}
             startDate={settings.employmentStartDate}
             accrualMode={settings.holidayAccrualMode}
+            carryoverEnabled={carryoverActive}
+            carryoverAvailable={holidayCarryoverFeatureEnabled}
           />
         )}
         {activeView === 'health' && (
@@ -208,6 +231,7 @@ export default function App() {
             allDays={allDays}
             daysOff={daysOff}
             employmentStartDate={settings.employmentStartDate}
+            historyScope={historyScope}
           />
         )}
         {activeView === 'settings' && (
@@ -232,6 +256,9 @@ export default function App() {
             showDailyTarget={dailyTargetEnabled}
             dailyTargetHours={settings.dailyTargetHours}
             onDailyTargetHoursChange={setDailyTargetHours}
+            showHolidayCarryover={holidayCarryoverFeatureEnabled}
+            holidayCarryoverEnabled={settings.holidayCarryoverEnabled}
+            onHolidayCarryoverEnabledChange={setHolidayCarryoverEnabled}
           />
         )}
       </main>
