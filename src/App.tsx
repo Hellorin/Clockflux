@@ -18,6 +18,9 @@ import HolidayPage from './components/HolidayPage'
 import SettingsPage from './components/SettingsPage'
 import { formatDateKey } from './utils/time'
 import * as preferencesService from './services/preferencesService'
+import * as authService from './services/authService'
+import { requestExport, downloadExportFile } from './services/exportService'
+import type { ExportFormat } from './services/exportService'
 import type { Milestone } from './hooks/useTimeTracker'
 import type { HoursFormat, Session } from './types'
 
@@ -48,6 +51,9 @@ export default function App() {
   const syncEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('cloud-sync')
   const themesEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('themes')
   const dailyTargetEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('custom-daily-target')
+  const exportCsvEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('export-csv')
+  const exportPdfEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('export-pdf')
+  const exportIcsEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('export-ics')
   const { lastSyncedAt, isSyncing, syncNow } = useSync({
     enabled: syncEnabled,
     days,
@@ -114,6 +120,26 @@ export default function App() {
     preferencesService.saveHoursFormat(next)
   }
 
+  // Fetches a CSV/PDF/ICS export for the given date range from the backend
+  // (Pro "export" feature) and triggers a browser download. Generation is
+  // server-side; this just ships up the client-held days/daysOff data.
+  // Returns whether it succeeded so CalendarView can show an error inline.
+  async function exportRange(format: ExportFormat, startDate: string, endDate: string): Promise<boolean> {
+    const accessToken = authService.loadAccessToken()
+    if (!accessToken) return false
+    const result = await requestExport(accessToken, {
+      format,
+      startDate,
+      endDate,
+      days,
+      daysOff,
+      dailyTargetHours: settings.dailyTargetHours,
+    })
+    if (!result) return false
+    downloadExportFile(result)
+    return true
+  }
+
   return (
     <>
     <CelebrationOverlay
@@ -161,6 +187,10 @@ export default function App() {
             onDayClick={(key, dayData) => setSelectedDay({ dateKey: key, sessions: dayData?.sessions ?? [] })}
             onBulkSetDaysOffType={setDaysOffTypeBulk}
             dailyTargetHours={settings.dailyTargetHours}
+            exportCsvEnabled={exportCsvEnabled}
+            exportPdfEnabled={exportPdfEnabled}
+            exportIcsEnabled={exportIcsEnabled}
+            onExportRange={exportRange}
           />
         )}
         {activeView === 'holiday' && (

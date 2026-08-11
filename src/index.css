@@ -779,6 +779,82 @@ body {
   opacity: 0.9;
 }
 
+.cal-export-panel {
+  background: var(--surface-alt);
+  border: 1px solid color-mix(in srgb, transparent, var(--text-muted) 40%);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.cal-export-panel__dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.cal-export-panel__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  flex: 1 1 8rem;
+}
+
+.cal-export-panel__field input {
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.5rem;
+}
+
+.cal-export-panel__actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.cal-export-panel__btn {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.5rem 0.4rem;
+  cursor: pointer;
+  transition: background 0.12s ease, opacity 0.12s ease;
+}
+
+.cal-export-panel__btn:hover:not(:disabled) {
+  background: var(--bg);
+}
+
+.cal-export-panel__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cal-export-panel__status {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.cal-export-panel__status--error {
+  color: var(--accent-out);
+}
+
 .cal-grid {
   display: flex;
   flex-direction: column;
