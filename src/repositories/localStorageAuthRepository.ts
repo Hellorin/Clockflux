@@ -1,8 +1,8 @@
 import type { AuthUser } from '../types'
 import type { AuthRepository } from './types'
 
-const STORAGE_KEY = 'timeforgeUser'
-const ACCESS_TOKEN_STORAGE_KEY = 'timeforgeAccessToken'
+const STORAGE_KEY = 'appUser'
+const ACCESS_TOKEN_STORAGE_KEY = 'appAccessToken'
 
 export const localStorageAuthRepository: AuthRepository = {
   loadUser(): AuthUser | null {

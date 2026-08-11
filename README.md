@@ -89,7 +89,7 @@ A render-blocking script in `<head>` hides the landing before first paint for an
 
 ## Data Storage
 
-All session data is persisted in `localStorage` under the key `timeforge`. Whether a visitor has seen the landing page is recorded separately under `timeforgeVisited`. No data is sent to any server.
+All session data is persisted in `localStorage` under the key `app`. Whether a visitor has seen the landing page is recorded separately under `appVisited`. No data is sent to any server.
 
 ## License
 

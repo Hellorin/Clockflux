@@ -1,4 +1,12 @@
-var KEYS = ['timeforge', 'timeforgeSettings', 'timeforgeVisited', 'hoursFormat'];
+var KEYS = ['app', 'appSettings', 'appVisited', 'hoursFormat'];
+
+// Legacy names for keys that used to be prefixed 'timeforge' (the app's name
+// before it became Clockflux). The main app migrates these to the KEYS names
+// on load (see public/migrate-init.js), but this page can be opened directly
+// without that having run yet, and an export made before this rename shipped
+// will still have data — or a backup file — under the old names. Read/write
+// always prefer the current name; these are only a fallback.
+var LEGACY_KEYS = { app: 'timeforge', appSettings: 'timeforgeSettings', appVisited: 'timeforgeVisited' };
 
 function setStatus(message) {
   document.getElementById('status').textContent = message;
@@ -8,6 +16,7 @@ document.getElementById('exportBtn').addEventListener('click', function () {
   var payload = {};
   KEYS.forEach(function (key) {
     var value = localStorage.getItem(key);
+    if (value === null && LEGACY_KEYS[key]) value = localStorage.getItem(LEGACY_KEYS[key]);
     if (value !== null) payload[key] = value;
   });
   if (Object.keys(payload).length === 0) {
@@ -42,7 +51,7 @@ importBtn.addEventListener('click', function () {
     var data;
     try {
       data = JSON.parse(String(reader.result));
-    } catch (e) {
+    } catch {
       setStatus('That file is not valid JSON.');
       return;
     }
@@ -53,8 +62,10 @@ importBtn.addEventListener('click', function () {
     }
     var imported = 0;
     KEYS.forEach(function (key) {
-      if (typeof data[key] === 'string') {
-        localStorage.setItem(key, data[key]);
+      var value = data[key];
+      if (typeof value !== 'string' && LEGACY_KEYS[key]) value = data[LEGACY_KEYS[key]];
+      if (typeof value === 'string') {
+        localStorage.setItem(key, value);
         imported++;
       }
     });

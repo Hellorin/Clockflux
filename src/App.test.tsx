@@ -43,7 +43,7 @@ describe('App', () => {
   })
 
   it('toggles the hours display format and persists the choice', () => {
-    localStorage.setItem('timeforge', JSON.stringify({
+    localStorage.setItem('app', JSON.stringify({
       days: { '2024-01-10': [{ checkIn: '2024-01-10T09:00:00.000Z', checkOut: '2024-01-10T13:00:00.000Z' }] },
       daysOff: {},
     }))

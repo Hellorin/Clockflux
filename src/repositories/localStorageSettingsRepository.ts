@@ -3,7 +3,7 @@ import type { SettingsRepository } from './types'
 
 // Exported so the privacy notice in index.html can be checked against the keys
 // actually in use — see src/test/indexHtml.test.ts.
-export const STORAGE_KEY = 'timeforgeSettings'
+export const STORAGE_KEY = 'appSettings'
 
 export const localStorageSettingsRepository: SettingsRepository = {
   loadRaw(): Partial<Settings> | null {

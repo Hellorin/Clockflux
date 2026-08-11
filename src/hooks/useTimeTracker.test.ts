@@ -34,7 +34,7 @@ describe('useTimeTracker', () => {
     expect(result.current.todaySessions).toHaveLength(1)
     expect(result.current.todaySessions[0].checkOut).toBeNull()
 
-    const stored = JSON.parse(localStorage.getItem('timeforge')!)
+    const stored = JSON.parse(localStorage.getItem('app')!)
     expect(stored.days[result.current.todayKey]).toHaveLength(1)
   })
 
@@ -113,7 +113,7 @@ describe('useTimeTracker', () => {
 
     act(() => result.current.setDaySessions(key, []))
     expect(result.current.todaySessions).toEqual([])
-    const stored = JSON.parse(localStorage.getItem('timeforge')!)
+    const stored = JSON.parse(localStorage.getItem('app')!)
     expect(stored.days[key]).toBeUndefined()
   })
 
@@ -159,7 +159,7 @@ describe('useTimeTracker', () => {
   })
 
   it('migrates legacy boolean day-off entries to "personal" on load', () => {
-    localStorage.setItem('timeforge', JSON.stringify({
+    localStorage.setItem('app', JSON.stringify({
       days: {},
       daysOff: { '2024-01-08': true },
     }))
@@ -168,7 +168,7 @@ describe('useTimeTracker', () => {
   })
 
   it('drops invalid legacy entries alongside a genuine boolean migration', () => {
-    localStorage.setItem('timeforge', JSON.stringify({
+    localStorage.setItem('app', JSON.stringify({
       days: {},
       daysOff: { '2024-01-08': 'garbage', '2024-01-09': true },
     }))
@@ -178,7 +178,7 @@ describe('useTimeTracker', () => {
   })
 
   it('auto-closes a stale open session from a past day at 21:00', () => {
-    localStorage.setItem('timeforge', JSON.stringify({
+    localStorage.setItem('app', JSON.stringify({
       days: {
         '2024-01-08': [{ checkIn: '2024-01-08T09:00:00.000', checkOut: null }],
       },
@@ -191,14 +191,14 @@ describe('useTimeTracker', () => {
   })
 
   it('falls back to empty data when localStorage contains invalid JSON', () => {
-    localStorage.setItem('timeforge', '{not json')
+    localStorage.setItem('app', '{not json')
     const { result } = renderHook(() => useTimeTracker())
     expect(result.current.allDays).toEqual([])
     expect(result.current.daysOff).toEqual({})
   })
 
   it('marks a weekend day as isOff with zero total in allDays', () => {
-    localStorage.setItem('timeforge', JSON.stringify({
+    localStorage.setItem('app', JSON.stringify({
       days: {
         '2024-01-13': [{ checkIn: '2024-01-13T09:00:00.000Z', checkOut: '2024-01-13T12:00:00.000Z' }],
       },
@@ -217,7 +217,7 @@ describe('useTimeTracker', () => {
   })
 
   it('computes weekTotalOtherDaysMs excluding today and off days', () => {
-    localStorage.setItem('timeforge', JSON.stringify({
+    localStorage.setItem('app', JSON.stringify({
       days: {
         '2024-01-08': [{ checkIn: '2024-01-08T09:00:00.000Z', checkOut: '2024-01-08T17:00:00.000Z' }], // 8h Monday
       },
@@ -228,7 +228,7 @@ describe('useTimeTracker', () => {
   })
 
   it('computes allPastWorkdayOvertimeMs from prior workdays', () => {
-    localStorage.setItem('timeforge', JSON.stringify({
+    localStorage.setItem('app', JSON.stringify({
       days: {
         '2024-01-08': [{ checkIn: '2024-01-08T09:00:00.000Z', checkOut: '2024-01-08T19:00:00.000Z' }], // 10h, +2h OT
       },

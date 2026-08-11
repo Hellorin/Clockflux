@@ -3,7 +3,7 @@ import type { TimeEntriesRepository } from './types'
 
 // Exported so the privacy notice in index.html can be checked against the keys
 // actually in use — see src/test/indexHtml.test.ts.
-export const STORAGE_KEY = 'timeforge'
+export const STORAGE_KEY = 'app'
 
 export const localStorageTimeEntriesRepository: TimeEntriesRepository = {
   load(): TimeEntriesData | null {

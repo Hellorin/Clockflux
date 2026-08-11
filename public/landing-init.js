@@ -1,6 +1,6 @@
 /* Pre-paint: hide the landing page for returning visitors so it never
    flashes. Runs before the stylesheet and before any module.
-   'timeforgeVisited' is duplicated from VISIT_STORAGE_KEY in
+   'appVisited' is duplicated from VISIT_STORAGE_KEY in
    src/repositories/localStorageVisitRepository.ts — src/test/indexHtml.test.ts
    asserts the two stay in sync.
    '#privacy' wins over the visited flag: the privacy notice has to stay
@@ -9,7 +9,7 @@
    readInitialOpen() in src/hooks/useLandingPage.ts. */
 (function() {
   try {
-    if (localStorage.getItem('timeforgeVisited') === '1'
+    if (localStorage.getItem('appVisited') === '1'
         && location.hash !== '#privacy') {
       document.documentElement.setAttribute('data-landing', 'hidden');
     }

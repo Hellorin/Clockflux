@@ -24,14 +24,14 @@ describe('useAppSettings', () => {
   })
 
   it('loads persisted settings merged with defaults', () => {
-    localStorage.setItem('timeforgeSettings', JSON.stringify({ annualHolidayAllowance: 30 }))
+    localStorage.setItem('appSettings', JSON.stringify({ annualHolidayAllowance: 30 }))
     const { result } = renderHook(() => useAppSettings())
     expect(result.current.settings.annualHolidayAllowance).toBe(30)
     expect(result.current.settings.holidayAccrualMode).toBe('gradual')
   })
 
   it('falls back to defaults when stored JSON is corrupt', () => {
-    localStorage.setItem('timeforgeSettings', '{not json')
+    localStorage.setItem('appSettings', '{not json')
     const { result } = renderHook(() => useAppSettings())
     expect(result.current.settings.annualHolidayAllowance).toBe(25)
   })
@@ -47,7 +47,7 @@ describe('useAppSettings', () => {
     act(() => result.current.setAnnualHolidayAllowance('not-a-number'))
     expect(result.current.settings.annualHolidayAllowance).toBe(0)
 
-    const stored = JSON.parse(localStorage.getItem('timeforgeSettings')!)
+    const stored = JSON.parse(localStorage.getItem('appSettings')!)
     expect(stored.annualHolidayAllowance).toBe(0)
   })
 
@@ -98,7 +98,7 @@ describe('useAppSettings', () => {
     act(() => result.current.setDailyTargetHours('not-a-number'))
     expect(result.current.settings.dailyTargetHours).toBe(0)
 
-    const stored = JSON.parse(localStorage.getItem('timeforgeSettings')!)
+    const stored = JSON.parse(localStorage.getItem('appSettings')!)
     expect(stored.dailyTargetHours).toBe(0)
   })
 
@@ -107,7 +107,7 @@ describe('useAppSettings', () => {
     act(() => result.current.setHolidayCarryoverEnabled(true))
     expect(result.current.settings.holidayCarryoverEnabled).toBe(true)
 
-    const stored = JSON.parse(localStorage.getItem('timeforgeSettings')!)
+    const stored = JSON.parse(localStorage.getItem('appSettings')!)
     expect(stored.holidayCarryoverEnabled).toBe(true)
 
     act(() => result.current.setHolidayCarryoverEnabled(false))
@@ -126,7 +126,7 @@ describe('useAppSettings', () => {
 
   describe('signed in (accessToken present)', () => {
     it('adopts the server-saved settings on mount, overriding the local cache', async () => {
-      localStorage.setItem('timeforgeSettings', JSON.stringify({ dailyTargetHours: 6, themeLightColor: '#fffbf5' }))
+      localStorage.setItem('appSettings', JSON.stringify({ dailyTargetHours: 6, themeLightColor: '#fffbf5' }))
       vi.mocked(settingsSyncService.getServerSettings).mockResolvedValue({
         annualHolidayAllowance: 25,
         employmentStartDate: null,
@@ -146,7 +146,7 @@ describe('useAppSettings', () => {
       // The server's (free-plan) truth wins over the locally cached Pro-looking values.
       expect(result.current.settings.dailyTargetHours).toBe(8)
       expect(result.current.settings.themeLightColor).toBeNull()
-      expect(JSON.parse(localStorage.getItem('timeforgeSettings')!).dailyTargetHours).toBe(8)
+      expect(JSON.parse(localStorage.getItem('appSettings')!).dailyTargetHours).toBe(8)
     })
 
     it('reconciles down to whatever the server actually persisted after a write', async () => {
@@ -177,7 +177,7 @@ describe('useAppSettings', () => {
 
       // Once the server responds, its clamped value is what sticks.
       expect(result.current.settings.dailyTargetHours).toBe(8)
-      expect(JSON.parse(localStorage.getItem('timeforgeSettings')!).dailyTargetHours).toBe(8)
+      expect(JSON.parse(localStorage.getItem('appSettings')!).dailyTargetHours).toBe(8)
     })
 
     it('keeps the optimistic local value when the request fails (offline)', async () => {

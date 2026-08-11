@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { signInWithGoogle, refreshAccessToken } from './authService'
 
-const STORAGE_KEY = 'timeforgeUser'
-const ACCESS_TOKEN_STORAGE_KEY = 'timeforgeAccessToken'
+const STORAGE_KEY = 'appUser'
+const ACCESS_TOKEN_STORAGE_KEY = 'appAccessToken'
 
 describe('signInWithGoogle', () => {
   beforeEach(() => {

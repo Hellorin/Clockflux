@@ -4,7 +4,7 @@ import type { VisitRepository } from './types'
 // whether to show the landing page before any module can load. src/test/
 // indexHtml.test.ts imports this constant and asserts the raw HTML still
 // contains it, so the two can't drift apart silently.
-export const VISIT_STORAGE_KEY = 'timeforgeVisited'
+export const VISIT_STORAGE_KEY = 'appVisited'
 const VISITED_VALUE = '1'
 
 export const localStorageVisitRepository: VisitRepository = {
