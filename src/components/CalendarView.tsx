@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react'
 import type { CSSProperties, TouchEvent } from 'react'
 import { getTodayKey, isWeekend } from '../utils/time'
-import { buildDaysOffIcs, downloadIcsFile } from '../utils/icsExport'
 import { dayOffFraction, dayOffBaseType, isHalfDayOff, DAY_OFF_BASE_TYPES } from '../utils/dayOff'
+import type { ExportFormat } from '../services/exportService'
 import type { DayEntry } from '../hooks/useTimeTracker'
 import type { DayOffType, DaysOffMap } from '../types'
 
@@ -12,6 +12,13 @@ interface CalendarViewProps {
   daysOff?: DaysOffMap
   onBulkSetDaysOffType?: (dateKeys: string[], type: DayOffType | null) => void
   dailyTargetHours?: number
+  /** Pro "export-csv"/"export-pdf"/"export-ics" features: each format is its
+   *  own flag, so a user's plan can unlock them independently. Lets the user
+   *  export a custom date range in whichever formats are enabled. */
+  exportCsvEnabled?: boolean
+  exportPdfEnabled?: boolean
+  exportIcsEnabled?: boolean
+  onExportRange?: (format: ExportFormat, startDate: string, endDate: string) => Promise<boolean>
 }
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -73,7 +80,8 @@ function weekColor(totalMs: number, targetMs: number): string | null {
   return null
 }
 
-export default function CalendarView({ allDays, onDayClick, daysOff = {}, onBulkSetDaysOffType, dailyTargetHours = 8 }: CalendarViewProps) {
+export default function CalendarView({ allDays, onDayClick, daysOff = {}, onBulkSetDaysOffType, dailyTargetHours = 8, exportCsvEnabled = false, exportPdfEnabled = false, exportIcsEnabled = false, onExportRange }: CalendarViewProps) {
+  const exportEnabled = exportCsvEnabled || exportPdfEnabled || exportIcsEnabled
   const today = getTodayKey()
   const [year, month] = (() => {
     const d = new Date()
@@ -85,6 +93,10 @@ export default function CalendarView({ allDays, onDayClick, daysOff = {}, onBulk
   const [selectMode, setSelectMode] = useState(false)
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(() => new Set())
   const [bulkHalf, setBulkHalf] = useState(false)
+  const [exportPanelOpen, setExportPanelOpen] = useState(false)
+  const [exportStart, setExportStart] = useState(today)
+  const [exportEnd, setExportEnd] = useState(today)
+  const [exportStatus, setExportStatus] = useState<'idle' | 'loading' | 'error'>('idle')
 
   function toggleSelectMode() {
     setSelectMode(m => {
@@ -131,9 +143,6 @@ export default function CalendarView({ allDays, onDayClick, daysOff = {}, onBulk
     })
   }
 
-  const monthPrefix = `${currentMonth.year}-${String(currentMonth.month + 1).padStart(2, '0')}-`
-  const canExport = Object.keys(daysOff).some(k => k.startsWith(monthPrefix))
-
   function handleTouchStart(e: TouchEvent) {
     const t = e.touches[0]
     touchStartRef.current = { x: t.clientX, y: t.clientY }
@@ -153,11 +162,28 @@ export default function CalendarView({ allDays, onDayClick, daysOff = {}, onBulk
     else prevMonth()
   }
 
-  function handleExportIcs() {
-    if (!canExport) return
-    const ics = buildDaysOffIcs(daysOff, currentMonth.year, currentMonth.month)
-    const filename = `clockflux-days-off-${currentMonth.year}-${String(currentMonth.month + 1).padStart(2, '0')}.ics`
-    downloadIcsFile(filename, ics)
+  function toggleExportPanel() {
+    setExportPanelOpen(open => {
+      if (!open) {
+        // Default the range to the month currently in view.
+        const first = new Date(currentMonth.year, currentMonth.month, 1)
+        const last = new Date(currentMonth.year, currentMonth.month + 1, 0)
+        setExportStart(toDateKey(first))
+        setExportEnd(toDateKey(last))
+        setExportStatus('idle')
+      }
+      return !open
+    })
+  }
+
+  async function handleExportRange(format: ExportFormat) {
+    if (!onExportRange || exportStart > exportEnd) {
+      setExportStatus('error')
+      return
+    }
+    setExportStatus('loading')
+    const ok = await onExportRange(format, exportStart, exportEnd)
+    setExportStatus(ok ? 'idle' : 'error')
   }
 
   return (
@@ -180,18 +206,64 @@ export default function CalendarView({ allDays, onDayClick, daysOff = {}, onBulk
           >
             {selectMode ? 'Cancel' : 'Select'}
           </button>
-          <button
-            type="button"
-            className="cal-nav-export"
-            onClick={handleExportIcs}
-            disabled={!canExport || selectMode}
-            title={canExport ? "Export this month's days off as .ics" : 'No days off this month'}
-            aria-label="Export days off as iCalendar file"
-          >
-            Export .ics
-          </button>
+          {exportEnabled && (
+            <button
+              type="button"
+              className={`cal-nav-export${exportPanelOpen ? ' cal-nav-export--active' : ''}`}
+              onClick={toggleExportPanel}
+              disabled={selectMode}
+              title="Export a custom date range as CSV, PDF, or ICS"
+              aria-pressed={exportPanelOpen}
+            >
+              <span className="settings-sync-star" aria-hidden="true">✦</span> Export…
+            </button>
+          )}
         </div>
       </div>
+
+      {exportEnabled && exportPanelOpen && (
+        <div className="cal-export-panel" role="region" aria-label="Export date range">
+          <div className="cal-export-panel__dates">
+            <label className="cal-export-panel__field">
+              <span>From</span>
+              <input
+                type="date"
+                value={exportStart}
+                max={exportEnd}
+                onChange={e => setExportStart(e.target.value)}
+              />
+            </label>
+            <label className="cal-export-panel__field">
+              <span>To</span>
+              <input
+                type="date"
+                value={exportEnd}
+                min={exportStart}
+                onChange={e => setExportEnd(e.target.value)}
+              />
+            </label>
+          </div>
+          <div className="cal-export-panel__actions">
+            {exportCsvEnabled && (
+              <button type="button" className="cal-export-panel__btn" onClick={() => handleExportRange('csv')} disabled={exportStatus === 'loading'}>
+                CSV
+              </button>
+            )}
+            {exportPdfEnabled && (
+              <button type="button" className="cal-export-panel__btn" onClick={() => handleExportRange('pdf')} disabled={exportStatus === 'loading'}>
+                PDF
+              </button>
+            )}
+            {exportIcsEnabled && (
+              <button type="button" className="cal-export-panel__btn" onClick={() => handleExportRange('ics')} disabled={exportStatus === 'loading'}>
+                ICS
+              </button>
+            )}
+          </div>
+          {exportStatus === 'loading' && <p className="cal-export-panel__status">Generating export…</p>}
+          {exportStatus === 'error' && <p className="cal-export-panel__status cal-export-panel__status--error">Export failed. Check the date range and try again.</p>}
+        </div>
+      )}
 
       <div
         className="cal-grid"

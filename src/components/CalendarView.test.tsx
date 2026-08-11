@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
-import * as icsExport from '../utils/icsExport'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import CalendarView from './CalendarView'
 import type { DayOffType } from '../types'
 
@@ -132,26 +131,6 @@ describe('CalendarView', () => {
     expect(screen.getByText('January 2024')).toBeInTheDocument()
   })
 
-  it('exports an ics file for the month when days off exist', () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2024-01-15T12:00:00'))
-    const buildSpy = vi.spyOn(icsExport, 'buildDaysOffIcs').mockReturnValue('ICS_CONTENT')
-    const downloadSpy = vi.spyOn(icsExport, 'downloadIcsFile').mockImplementation(() => {})
-    render(<CalendarView allDays={[]} onDayClick={() => {}} daysOff={{ '2024-01-10': 'personal' }} />)
-    const exportBtn = screen.getByLabelText('Export days off as iCalendar file')
-    expect(exportBtn).not.toBeDisabled()
-    fireEvent.click(exportBtn)
-    expect(buildSpy).toHaveBeenCalledWith({ '2024-01-10': 'personal' }, 2024, 0)
-    expect(downloadSpy).toHaveBeenCalledWith('clockflux-days-off-2024-01.ics', 'ICS_CONTENT')
-  })
-
-  it('disables export when there are no days off in the current month', () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2024-01-15T12:00:00'))
-    render(<CalendarView allDays={[]} onDayClick={() => {}} daysOff={{}} />)
-    expect(screen.getByLabelText('Export days off as iCalendar file')).toBeDisabled()
-  })
-
   it('enters select mode, selects days, and applies a bulk day-off type', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2024-01-15T12:00:00'))
@@ -224,5 +203,73 @@ describe('CalendarView', () => {
     const { container } = render(<CalendarView allDays={allDays} onDayClick={() => {}} />)
     expect(container.querySelectorAll('.cal-week-empty').length).toBeGreaterThan(0)
     expect(screen.getByText('8.0h')).toBeInTheDocument()
+  })
+
+  describe('pro range export', () => {
+    it('is hidden when none of the export-csv/pdf/ics features are enabled', () => {
+      render(<CalendarView allDays={[]} onDayClick={() => {}} />)
+      expect(screen.queryByTitle('Export a custom date range as CSV, PDF, or ICS')).toBeNull()
+    })
+
+    it('shows the export button when only one format is enabled, with only that format offered', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2024-01-15T12:00:00'))
+      render(<CalendarView allDays={[]} onDayClick={() => {}} exportPdfEnabled onExportRange={vi.fn()} />)
+      fireEvent.click(screen.getByTitle('Export a custom date range as CSV, PDF, or ICS'))
+      expect(screen.getByText('PDF')).toBeInTheDocument()
+      expect(screen.queryByText('CSV')).toBeNull()
+      expect(screen.queryByText('ICS')).toBeNull()
+    })
+
+    it('opens the panel defaulted to the current month and requests each enabled format', async () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2024-01-15T12:00:00'))
+      const onExportRange = vi.fn().mockResolvedValue(true)
+      render(<CalendarView allDays={[]} onDayClick={() => {}} exportCsvEnabled exportPdfEnabled exportIcsEnabled onExportRange={onExportRange} />)
+
+      fireEvent.click(screen.getByTitle('Export a custom date range as CSV, PDF, or ICS'))
+      expect(screen.getByLabelText('From')).toHaveValue('2024-01-01')
+      expect(screen.getByLabelText('To')).toHaveValue('2024-01-31')
+
+      fireEvent.click(screen.getByText('CSV'))
+      expect(onExportRange).toHaveBeenCalledWith('csv', '2024-01-01', '2024-01-31')
+    })
+
+    it('shows an error message when the export fails', async () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2024-01-15T12:00:00'))
+      const onExportRange = vi.fn().mockResolvedValue(false)
+      render(<CalendarView allDays={[]} onDayClick={() => {}} exportCsvEnabled exportPdfEnabled exportIcsEnabled onExportRange={onExportRange} />)
+
+      fireEvent.click(screen.getByTitle('Export a custom date range as CSV, PDF, or ICS'))
+      await act(() => fireEvent.click(screen.getByText('PDF')))
+      expect(screen.getByText('Export failed. Check the date range and try again.')).toBeInTheDocument()
+    })
+
+    it('rejects an end date before the start date without calling onExportRange', async () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2024-01-15T12:00:00'))
+      const onExportRange = vi.fn()
+      render(<CalendarView allDays={[]} onDayClick={() => {}} exportCsvEnabled exportPdfEnabled exportIcsEnabled onExportRange={onExportRange} />)
+
+      fireEvent.click(screen.getByTitle('Export a custom date range as CSV, PDF, or ICS'))
+      fireEvent.change(screen.getByLabelText('From'), { target: { value: '2024-01-20' } })
+      fireEvent.change(screen.getByLabelText('To'), { target: { value: '2024-01-10' } })
+      await act(() => fireEvent.click(screen.getByText('ICS')))
+
+      expect(onExportRange).not.toHaveBeenCalled()
+      expect(screen.getByText('Export failed. Check the date range and try again.')).toBeInTheDocument()
+    })
+
+    it('closes the panel when the export button is toggled again', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2024-01-15T12:00:00'))
+      render(<CalendarView allDays={[]} onDayClick={() => {}} exportCsvEnabled onExportRange={vi.fn()} />)
+      const btn = screen.getByTitle('Export a custom date range as CSV, PDF, or ICS')
+      fireEvent.click(btn)
+      expect(screen.getByLabelText('From')).toBeInTheDocument()
+      fireEvent.click(btn)
+      expect(screen.queryByLabelText('From')).toBeNull()
+    })
   })
 })
