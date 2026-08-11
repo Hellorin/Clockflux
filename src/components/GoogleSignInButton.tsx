@@ -71,6 +71,14 @@ export default function GoogleSignInButton({ user, onSignIn, onSignOut }: Google
         // but if it were ever invoked, wiring it through is still correct.
         callback: response => onSignIn(response.credential),
         ux_mode: 'redirect',
+        // This is the plain, unparameterized callback path — this app is
+        // the backend's DefaultFrontendKey ("app"), so it needs no
+        // "/{frontend}" suffix (see clockflux-subscription-front's
+        // GoogleSignInButton.tsx for the multi-frontend variant, and
+        // AuthHandler.GoogleRedirectCallback for why it's a path segment and
+        // not a query param or GIS config field: login_uri must exactly
+        // match an Authorized redirect URI registered with Google, and a
+        // query string breaks that match).
         login_uri: `${import.meta.env.VITE_API_URL}/api/v1/auth/google/callback`,
       })
       accountsId.renderButton(container, { type: 'icon', theme: 'outline', size: 'medium', shape: 'circle' })
