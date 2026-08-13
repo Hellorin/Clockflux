@@ -89,8 +89,9 @@ describe('SettingsPage', () => {
       />
     )
 
-    // No collapse toggle: the section header isn't a button.
-    expect(container.querySelector('.settings-section__header')?.tagName).toBe('DIV')
+    // No collapse toggle: the Sync section header isn't a button (Holiday, the
+    // first section, still is one).
+    expect(container.querySelectorAll('.settings-section__header')[1]?.tagName).toBe('DIV')
     expect(screen.getByText(/Last synced/)).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Sync now' }))
@@ -266,7 +267,7 @@ describe('SettingsPage', () => {
         onAccrualModeChange={() => {}}
       />
     )
-    expect(screen.queryByText('Billing')).not.toBeInTheDocument()
+    expect(screen.queryByText('Account')).not.toBeInTheDocument()
   })
 
   it('cancels the subscription only after the user confirms in the popup', () => {
@@ -283,17 +284,16 @@ describe('SettingsPage', () => {
         onCancelSubscription={onCancelSubscription}
       />
     )
-    fireEvent.click(screen.getByText('Billing'))
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel subscription' }))
+    fireEvent.click(screen.getByRole('button', { name: /Cancel subscription/ }))
 
     // The confirmation popup is now open; dismissing it should not cancel.
     fireEvent.click(screen.getByRole('button', { name: 'Keep subscription' }))
     expect(onCancelSubscription).not.toHaveBeenCalled()
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel subscription' }))
+    fireEvent.click(screen.getByRole('button', { name: /Cancel subscription/ }))
     // Two "Cancel subscription" buttons now exist: the settings one and the popup's confirm button.
-    const confirmButtons = screen.getAllByRole('button', { name: 'Cancel subscription' })
+    const confirmButtons = screen.getAllByRole('button', { name: /Cancel subscription/ })
     fireEvent.click(confirmButtons[confirmButtons.length - 1])
     expect(onCancelSubscription).toHaveBeenCalled()
   })
@@ -311,7 +311,6 @@ describe('SettingsPage', () => {
         isCancellingSubscription
       />
     )
-    fireEvent.click(screen.getByText('Billing'))
     expect(screen.getByRole('button', { name: 'Cancelling…' })).toBeDisabled()
 
     rerender(
@@ -328,5 +327,56 @@ describe('SettingsPage', () => {
     )
     expect(screen.queryByRole('button', { name: /Cancel/ })).not.toBeInTheDocument()
     expect(screen.getByText('Cancels at the end of your current billing period')).toBeInTheDocument()
+  })
+
+  it('shows the billing interval and renewal date when both are known', () => {
+    render(
+      <SettingsPage
+        allowance={24}
+        onAllowanceChange={() => {}}
+        startDate={null}
+        onStartDateChange={() => {}}
+        accrualMode="gradual"
+        onAccrualModeChange={() => {}}
+        showBilling
+        currentPeriodEnd="2026-09-13T00:00:00Z"
+        subscriptionInterval="month"
+      />
+    )
+    expect(screen.getByText('Billing period')).toBeInTheDocument()
+    expect(screen.getByText(/^Billed monthly · Renews /)).toBeInTheDocument()
+  })
+
+  it('shows the end date instead of a renewal date once cancellation is scheduled', () => {
+    render(
+      <SettingsPage
+        allowance={24}
+        onAllowanceChange={() => {}}
+        startDate={null}
+        onStartDateChange={() => {}}
+        accrualMode="gradual"
+        onAccrualModeChange={() => {}}
+        showBilling
+        cancelAtPeriodEnd
+        currentPeriodEnd="2026-09-13T00:00:00Z"
+        subscriptionInterval="year"
+      />
+    )
+    expect(screen.getByText(/^Billed yearly · Ends /)).toBeInTheDocument()
+  })
+
+  it('hides the billing period field when neither interval nor renewal date is known', () => {
+    render(
+      <SettingsPage
+        allowance={24}
+        onAllowanceChange={() => {}}
+        startDate={null}
+        onStartDateChange={() => {}}
+        accrualMode="gradual"
+        onAccrualModeChange={() => {}}
+        showBilling
+      />
+    )
+    expect(screen.queryByText('Billing period')).not.toBeInTheDocument()
   })
 })

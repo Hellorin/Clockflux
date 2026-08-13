@@ -91,15 +91,12 @@ export default function GoogleSignInButton({ user, onSignIn, onSignOut }: Google
     return (
       <button
         type="button"
-        className="app-auth-user"
+        className="app-auth-signout"
         onClick={onSignOut}
+        aria-label={`Signed in as ${user.email} — sign out`}
         title={`Signed in as ${user.email} — click to sign out`}
       >
-        {user.picture ? (
-          <img className="app-auth-avatar" src={user.picture} alt="" referrerPolicy="no-referrer" />
-        ) : (
-          <span className="app-auth-avatar app-auth-avatar--fallback">{user.name.charAt(0).toUpperCase()}</span>
-        )}
+        <span aria-hidden="true">🚪</span> Sign out
       </button>
     )
   }

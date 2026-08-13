@@ -4,8 +4,9 @@ import { formatHolidayDays } from '../utils/holidays'
 import SettingsSection from './SettingsSection'
 import ThemeColorDropdown from './ThemeColorDropdown'
 import ConfirmDialog from './ConfirmDialog'
+import GoogleSignInButton from './GoogleSignInButton'
 import { DARK_THEME_OPTIONS, LIGHT_THEME_OPTIONS } from '../constants/themeColors'
-import type { HolidayAccrualMode } from '../types'
+import type { AuthUser, HolidayAccrualMode } from '../types'
 
 interface SettingsPageProps {
   allowance: number
@@ -38,11 +39,20 @@ interface SettingsPageProps {
   /** Cancel-subscription control, shown only to Pro users. */
   showBilling?: boolean
   cancelAtPeriodEnd?: boolean
+  /** ISO 8601 timestamp of when the current billing period ends (renewal, or cancellation takes effect). */
+  currentPeriodEnd?: string | null
+  /** Billing interval of the active subscription ("month", "year", ...). */
+  subscriptionInterval?: string | null
   isCancellingSubscription?: boolean
   onCancelSubscription?: () => void
+  /** Sign in/out control, shown when auth is enabled. */
+  showAccount?: boolean
+  user?: AuthUser | null
+  onSignIn?: (credential: string) => void
+  onSignOut?: () => void
 }
 
-export default function SettingsPage({ allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange, showSync = false, lastSyncedAt = null, isSyncing = false, onSyncNow, showThemes = false, themeLightColor = null, themeDarkColor = null, onThemeLightColorChange, onThemeDarkColorChange, onPreviewTheme, onPreviewThemeEnd, showDailyTarget = false, dailyTargetHours = 8, onDailyTargetHoursChange, showHolidayCarryover = false, holidayCarryoverEnabled = false, onHolidayCarryoverEnabledChange, showBilling = false, cancelAtPeriodEnd = false, isCancellingSubscription = false, onCancelSubscription }: SettingsPageProps) {
+export default function SettingsPage({ allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange, showSync = false, lastSyncedAt = null, isSyncing = false, onSyncNow, showThemes = false, themeLightColor = null, themeDarkColor = null, onThemeLightColorChange, onThemeDarkColorChange, onPreviewTheme, onPreviewThemeEnd, showDailyTarget = false, dailyTargetHours = 8, onDailyTargetHoursChange, showHolidayCarryover = false, holidayCarryoverEnabled = false, onHolidayCarryoverEnabledChange, showBilling = false, cancelAtPeriodEnd = false, currentPeriodEnd = null, subscriptionInterval = null, isCancellingSubscription = false, onCancelSubscription, showAccount = false, user = null, onSignIn, onSignOut }: SettingsPageProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const year = useMemo(() => new Date().getFullYear(), [])
   const proratedAllowance = getProratedAllowance(startDate, allowance, year)
@@ -50,6 +60,113 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
 
   return (
     <section className="settings-page">
+      {(showAccount || showBilling) && (
+        <SettingsSection title="Account" collapsible={false}>
+          {showAccount && (
+            <div className="settings-field settings-account-row">
+              <span className="settings-field-label">
+                {user ? `Signed in as ${user.email}` : 'Not signed in'}
+              </span>
+              <GoogleSignInButton user={user} onSignIn={onSignIn ?? (() => {})} onSignOut={onSignOut ?? (() => {})} />
+            </div>
+          )}
+          {showBilling && (
+            <div className="settings-field">
+              <span className="settings-field-label">Subscription</span>
+              {cancelAtPeriodEnd ? (
+                <span className="settings-note">Cancels at the end of your current billing period</span>
+              ) : (
+                <button
+                  type="button"
+                  className="settings-cancel-btn"
+                  disabled={isCancellingSubscription}
+                  onClick={() => setShowCancelConfirm(true)}
+                >
+                  {isCancellingSubscription ? 'Cancelling…' : <>😢 Cancel subscription</>}
+                </button>
+              )}
+            </div>
+          )}
+          {showBilling && (subscriptionInterval || currentPeriodEnd) && (
+            <div className="settings-field">
+              <span className="settings-field-label">Billing period</span>
+              <span className="settings-note">
+                {[
+                  subscriptionInterval ? `Billed ${formatInterval(subscriptionInterval)}` : null,
+                  currentPeriodEnd ? `${cancelAtPeriodEnd ? 'Ends' : 'Renews'} ${formatPeriodEndDate(currentPeriodEnd)}` : null,
+                ].filter(Boolean).join(' · ')}
+              </span>
+            </div>
+          )}
+        </SettingsSection>
+      )}
+
+      <SettingsSection title="Holiday">
+        <div className="settings-field">
+          <span className="settings-field-label">Accrual</span>
+          <div className="settings-mode-toggle" role="radiogroup" aria-label="Holiday accrual mode">
+            <button
+                type="button"
+                className={`settings-mode-btn${accrualMode !== 'immediate' ? ' settings-mode-btn--active' : ''}`}
+                aria-pressed={accrualMode !== 'immediate'}
+                onClick={() => onAccrualModeChange('gradual')}
+            >
+              Gradually
+            </button>
+            <button
+                type="button"
+                className={`settings-mode-btn${accrualMode === 'immediate' ? ' settings-mode-btn--active' : ''}`}
+                aria-pressed={accrualMode === 'immediate'}
+                onClick={() => onAccrualModeChange('immediate')}
+            >
+              All at once
+            </button>
+          </div>
+        </div>
+        <label className="settings-field">
+          <span className="settings-field-label">Annual allowance</span>
+          <span className="settings-field-control">
+            <input
+                type="number"
+                min="0"
+                className="settings-field-input"
+                value={allowance}
+                onChange={e => onAllowanceChange(e.target.value)}
+                aria-label="Annual holiday allowance"
+            />
+            <span className="settings-field-suffix">days/yr</span>
+          </span>
+        </label>
+        <label className="settings-field">
+          <span className="settings-field-label">Started on</span>
+          <input
+              type="date"
+              className="settings-field-input settings-field-input--date"
+              value={startDate || ''}
+              onChange={e => onStartDateChange(e.target.value)}
+              aria-label="Employment start date"
+          />
+        </label>
+        {isProrated && (
+            <p className="settings-note">
+              Prorated from {formatStartDate(startDate)} ({formatHolidayDays(proratedAllowance)} of {allowance} days)
+            </p>
+        )}
+        {showHolidayCarryover && (
+          <label className="settings-field">
+            <span className="settings-field-label">
+              <span className="settings-sync-star" aria-hidden="true">✦</span> Carry over unused days
+            </span>
+            <input
+                type="checkbox"
+                checked={holidayCarryoverEnabled}
+                onChange={e => onHolidayCarryoverEnabledChange?.(e.target.checked)}
+                aria-label="Carry over unused holiday days into the new year"
+            />
+          </label>
+        )}
+      </SettingsSection>
+
       {showSync && (
         <SettingsSection title={<><span className="settings-sync-star" aria-hidden="true">✦</span> Sync</>} collapsible={false}>
           <div className="settings-field settings-sync-row">
@@ -128,92 +245,6 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
         </SettingsSection>
       )}
 
-      <SettingsSection title="Holiday">
-        <div className="settings-field">
-          <span className="settings-field-label">Accrual</span>
-          <div className="settings-mode-toggle" role="radiogroup" aria-label="Holiday accrual mode">
-            <button
-                type="button"
-                className={`settings-mode-btn${accrualMode !== 'immediate' ? ' settings-mode-btn--active' : ''}`}
-                aria-pressed={accrualMode !== 'immediate'}
-                onClick={() => onAccrualModeChange('gradual')}
-            >
-              Gradually
-            </button>
-            <button
-                type="button"
-                className={`settings-mode-btn${accrualMode === 'immediate' ? ' settings-mode-btn--active' : ''}`}
-                aria-pressed={accrualMode === 'immediate'}
-                onClick={() => onAccrualModeChange('immediate')}
-            >
-              All at once
-            </button>
-          </div>
-        </div>
-        <label className="settings-field">
-          <span className="settings-field-label">Annual allowance</span>
-          <span className="settings-field-control">
-            <input
-                type="number"
-                min="0"
-                className="settings-field-input"
-                value={allowance}
-                onChange={e => onAllowanceChange(e.target.value)}
-                aria-label="Annual holiday allowance"
-            />
-            <span className="settings-field-suffix">days/yr</span>
-          </span>
-        </label>
-        <label className="settings-field">
-          <span className="settings-field-label">Started on</span>
-          <input
-              type="date"
-              className="settings-field-input settings-field-input--date"
-              value={startDate || ''}
-              onChange={e => onStartDateChange(e.target.value)}
-              aria-label="Employment start date"
-          />
-        </label>
-        {isProrated && (
-            <p className="settings-note">
-              Prorated from {formatStartDate(startDate)} ({formatHolidayDays(proratedAllowance)} of {allowance} days)
-            </p>
-        )}
-        {showHolidayCarryover && (
-          <label className="settings-field">
-            <span className="settings-field-label">
-              <span className="settings-sync-star" aria-hidden="true">✦</span> Carry over unused days
-            </span>
-            <input
-                type="checkbox"
-                checked={holidayCarryoverEnabled}
-                onChange={e => onHolidayCarryoverEnabledChange?.(e.target.checked)}
-                aria-label="Carry over unused holiday days into the new year"
-            />
-          </label>
-        )}
-      </SettingsSection>
-
-      {showBilling && (
-        <SettingsSection title="Billing">
-          <div className="settings-field">
-            <span className="settings-field-label">Subscription</span>
-            {cancelAtPeriodEnd ? (
-              <span className="settings-note">Cancels at the end of your current billing period</span>
-            ) : (
-              <button
-                type="button"
-                className="settings-cancel-btn"
-                disabled={isCancellingSubscription}
-                onClick={() => setShowCancelConfirm(true)}
-              >
-                {isCancellingSubscription ? 'Cancelling…' : 'Cancel subscription'}
-              </button>
-            )}
-          </div>
-        </SettingsSection>
-      )}
-
       {showCancelConfirm && (
         <ConfirmDialog
           title="Cancel subscription?"
@@ -234,6 +265,16 @@ function formatStartDate(key: string | null): string {
   const [y, m, d] = key.split('-').map(Number)
   const date = new Date(y, m - 1, d)
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function formatPeriodEndDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function formatInterval(interval: string): string {
+  if (interval === 'month') return 'monthly'
+  if (interval === 'year') return 'yearly'
+  return interval
 }
 
 function formatSyncTime(date: Date): string {

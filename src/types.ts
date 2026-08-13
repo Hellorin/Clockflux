@@ -49,6 +49,15 @@ export interface AuthUser {
   plan: Plan
   /** True once a Pro user has cancelled but is still within their paid billing period. */
   cancelAtPeriodEnd: boolean
+  /**
+   * ISO 8601 timestamp of when the current billing period ends — the next
+   * renewal date, or the date Pro access ends if cancelAtPeriodEnd is true.
+   * Undefined for Free users or briefly after checkout, before the backend
+   * has received Stripe's subscription webhook.
+   */
+  currentPeriodEnd?: string
+  /** Billing interval of the active subscription ("month", "year", ...). Undefined alongside currentPeriodEnd. */
+  subscriptionInterval?: string
 }
 
 /** Everything a Pro user's data-sync push/pull carries: time entries plus holiday settings. */

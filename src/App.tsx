@@ -5,7 +5,6 @@ import { useAppSettings } from './hooks/useAppSettings'
 import { useLandingPage } from './hooks/useLandingPage'
 import { useAuth } from './hooks/useAuth'
 import { useSync } from './hooks/useSync'
-import GoogleSignInButton from './components/GoogleSignInButton'
 import SlideToggle from './components/SlideToggle'
 import LiveTimer from './components/LiveTimer'
 import TodaySummary from './components/TodaySummary'
@@ -187,11 +186,10 @@ export default function App() {
         {AUTH_ENABLED && PAID_FEATURES_ENABLED && user && <p className="app-greeting">{getGreeting(user.name)}</p>}
         {AUTH_ENABLED && PAID_FEATURES_ENABLED && !user && previouslySignedIn && (
           <p className="app-greeting app-signed-out-notice">
-            You've signed in on this device before but aren't connected right now — if you're a Pro user, sign in to restore the full features.
+            You've signed in on this device before but aren't connected right now — if you're a Pro user, sign in from Settings to restore the full features.
           </p>
         )}
         <p className="app-date">{formatDateKey(todayKey)}</p>
-        {AUTH_ENABLED && PAID_FEATURES_ENABLED && <GoogleSignInButton user={user} onSignIn={signIn} onSignOut={signOut} />}
         <button
           ref={aboutBtnRef}
           type="button"
@@ -202,6 +200,14 @@ export default function App() {
         >
           ?
         </button>
+        {AUTH_ENABLED && PAID_FEATURES_ENABLED && (
+          <span
+            className={`app-connection-dot${user ? ' app-connection-dot--online' : ' app-connection-dot--offline'}`}
+            role="status"
+            aria-label={user ? 'Signed in' : 'Not signed in'}
+            title={user ? 'Signed in' : 'Not signed in — sign in from Settings'}
+          />
+        )}
       </header>
 
       <main className="app-main">
@@ -281,8 +287,14 @@ export default function App() {
             onHolidayCarryoverEnabledChange={setHolidayCarryoverEnabled}
             showBilling={billingEnabled}
             cancelAtPeriodEnd={user?.cancelAtPeriodEnd}
+            currentPeriodEnd={user?.currentPeriodEnd}
+            subscriptionInterval={user?.subscriptionInterval}
             isCancellingSubscription={isCancellingSubscription}
             onCancelSubscription={cancelUserSubscription}
+            showAccount={paidGatingActive}
+            user={user}
+            onSignIn={signIn}
+            onSignOut={signOut}
           />
         )}
       </main>
