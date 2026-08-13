@@ -76,7 +76,7 @@ body {
 .app-about-btn {
   position: absolute;
   top: 2rem;
-  right: 0;
+  left: 0;
   width: 1.5rem;
   height: 1.5rem;
   border-radius: 50%;
@@ -95,15 +95,31 @@ body {
 
 .app-about-btn:hover { opacity: 1; }
 
-.app-auth-btn {
+.app-connection-dot {
   position: absolute;
-  top: 1.7rem;
-  left: 0;
+  top: 2rem;
+  right: 0.25rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+.app-connection-dot--online {
+  background: #2ecc71;
+}
+
+.app-connection-dot--offline {
+  background: #e74c3c;
+}
+
+.app-auth-btn {
   width: 2rem;
   height: 2rem;
   overflow: hidden;
   border-radius: 50%;
   line-height: 0;
+  flex-shrink: 0;
 }
 
 /* Google's injected button markup assumes the browser default box-sizing
@@ -124,35 +140,27 @@ body {
   height: 16px !important;
 }
 
-.app-auth-user {
-  position: absolute;
-  top: 2rem;
-  left: 0;
-  width: 1.75rem;
-  height: 1.75rem;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
+.app-auth-signout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 0.4rem 0.7rem;
   cursor: pointer;
-  overflow: hidden;
+  flex-shrink: 0;
 }
 
-.app-auth-avatar {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
+.settings-account-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-}
-
-.app-auth-avatar--fallback {
-  background: var(--surface-alt);
-  color: var(--text);
-  font-size: 0.85rem;
-  font-weight: 700;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .app-title {
