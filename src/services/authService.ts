@@ -149,6 +149,19 @@ export async function signInWithGoogle(credential: string): Promise<AuthUser | n
   }
 }
 
+// Refresh tokens are single-use and rotate on every redemption (see the
+// backend's RefreshTokenRepository.Redeem): a second, concurrent redemption
+// of the *same* token is indistinguishable server-side from theft, and gets
+// treated as such — it revokes the entire token family, tearing down the
+// session that the first (winning) redemption just renewed. Two callers
+// firing refreshAccessToken() at nearly the same moment (e.g. React
+// StrictMode double-invoking the mount effect in useAuth, or two effects
+// both wanting a fresh token right after a redirect) would otherwise produce
+// exactly that race and sign the user out. Sharing one in-flight request
+// across all concurrent callers makes that impossible: there's only ever one
+// redemption in flight, so there's nothing to race.
+let inFlightRefresh: Promise<AuthUser | null> | null = null
+
 /**
  * Exchanges the httpOnly refresh-token cookie (set by signInWithGoogle or a
  * prior call to this) for a new access token at /api/v1/auth/refresh, so a
@@ -158,21 +171,32 @@ export async function signInWithGoogle(credential: string): Promise<AuthUser | n
  * credentials: 'include'. Returns null if there's no valid refresh token
  * (expired, revoked, or never signed in) or the request fails for any other
  * reason; callers should treat null as "no longer signed in".
+ *
+ * Concurrent calls share a single in-flight request rather than each firing
+ * their own — see inFlightRefresh above.
  */
-export async function refreshAccessToken(): Promise<AuthUser | null> {
-  try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/auth/refresh`, {
-      method: 'POST',
-      credentials: 'include',
-    })
-    if (!response.ok) return null
-    const { user, accessToken } = (await response.json()) as Partial<AuthResponse>
-    if (!isAuthUser(user) || typeof accessToken !== 'string') return null
-    const normalized = normalizeAuthUser(user)
-    saveUser(normalized)
-    resolveRepository().saveAccessToken(accessToken)
-    return normalized
-  } catch {
-    return null
-  }
+export function refreshAccessToken(): Promise<AuthUser | null> {
+  if (inFlightRefresh) return inFlightRefresh
+
+  inFlightRefresh = (async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      if (!response.ok) return null
+      const { user, accessToken } = (await response.json()) as Partial<AuthResponse>
+      if (!isAuthUser(user) || typeof accessToken !== 'string') return null
+      const normalized = normalizeAuthUser(user)
+      saveUser(normalized)
+      resolveRepository().saveAccessToken(accessToken)
+      return normalized
+    } catch {
+      return null
+    } finally {
+      inFlightRefresh = null
+    }
+  })()
+
+  return inFlightRefresh
 }
