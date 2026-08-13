@@ -6,6 +6,7 @@ import ThemeColorDropdown from './ThemeColorDropdown'
 import ConfirmDialog from './ConfirmDialog'
 import GoogleSignInButton from './GoogleSignInButton'
 import { DARK_THEME_OPTIONS, LIGHT_THEME_OPTIONS } from '../constants/themeColors'
+import { PRO_FEATURES } from '../constants/proFeatures'
 import type { AuthUser, HolidayAccrualMode } from '../types'
 
 interface SettingsPageProps {
@@ -50,9 +51,13 @@ interface SettingsPageProps {
   user?: AuthUser | null
   onSignIn?: (credential: string) => void
   onSignOut?: () => void
+  /** Pro feature showcase: shown to signed-out/Free callers once paid gating is live, to explain what they're missing. */
+  showUpgrade?: boolean
+  /** Where the "Upgrade to Pro" link sends the user (clockflux-subscription-front). */
+  subscriptionUrl?: string
 }
 
-export default function SettingsPage({ allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange, showSync = false, lastSyncedAt = null, isSyncing = false, onSyncNow, showThemes = false, themeLightColor = null, themeDarkColor = null, onThemeLightColorChange, onThemeDarkColorChange, onPreviewTheme, onPreviewThemeEnd, showDailyTarget = false, dailyTargetHours = 8, onDailyTargetHoursChange, showHolidayCarryover = false, holidayCarryoverEnabled = false, onHolidayCarryoverEnabledChange, showBilling = false, cancelAtPeriodEnd = false, currentPeriodEnd = null, subscriptionInterval = null, isCancellingSubscription = false, onCancelSubscription, showAccount = false, user = null, onSignIn, onSignOut }: SettingsPageProps) {
+export default function SettingsPage({ allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange, showSync = false, lastSyncedAt = null, isSyncing = false, onSyncNow, showThemes = false, themeLightColor = null, themeDarkColor = null, onThemeLightColorChange, onThemeDarkColorChange, onPreviewTheme, onPreviewThemeEnd, showDailyTarget = false, dailyTargetHours = 8, onDailyTargetHoursChange, showHolidayCarryover = false, holidayCarryoverEnabled = false, onHolidayCarryoverEnabledChange, showBilling = false, cancelAtPeriodEnd = false, currentPeriodEnd = null, subscriptionInterval = null, isCancellingSubscription = false, onCancelSubscription, showAccount = false, user = null, onSignIn, onSignOut, showUpgrade = false, subscriptionUrl }: SettingsPageProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const year = useMemo(() => new Date().getFullYear(), [])
   const proratedAllowance = getProratedAllowance(startDate, allowance, year)
@@ -166,6 +171,34 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
           </label>
         )}
       </SettingsSection>
+
+      {showUpgrade && (
+        <SettingsSection
+          title={<><span className="settings-sync-star" aria-hidden="true">✦</span> Go Pro</>}
+          defaultOpen
+        >
+          <p className="settings-note settings-upgrade-intro">Unlock these with Clockflux Pro:</p>
+          <ul className="settings-upgrade-list">
+            {PRO_FEATURES.map(feature => (
+              <li key={feature.key} className="settings-upgrade-item">
+                <span className="settings-upgrade-icon" aria-hidden="true">{feature.icon}</span>
+                <span className="settings-upgrade-text">
+                  <span className="settings-upgrade-label">{feature.label}</span>
+                  <span className="settings-upgrade-desc">{feature.description}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <a
+            className="settings-upgrade-cta"
+            href={subscriptionUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Upgrade to Pro
+          </a>
+        </SettingsSection>
+      )}
 
       {showSync && (
         <SettingsSection title={<><span className="settings-sync-star" aria-hidden="true">✦</span> Sync</>} collapsible={false}>

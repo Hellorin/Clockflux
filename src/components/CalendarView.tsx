@@ -236,6 +236,12 @@ export default function CalendarView({ allDays, onDayClick, daysOff = {}, onBulk
         </p>
       )}
 
+      {!exportEnabled && historyScope !== null && (
+        <p className="settings-note cal-scope-note">
+          <span className="settings-sync-star" aria-hidden="true">✦</span> Pro exports your hours as CSV, PDF, or a calendar (.ics) file for any date range — see Settings to upgrade.
+        </p>
+      )}
+
       {exportEnabled && exportPanelOpen && (
         <div className="cal-export-panel" role="region" aria-label="Export date range">
           <div className="cal-export-panel__dates">

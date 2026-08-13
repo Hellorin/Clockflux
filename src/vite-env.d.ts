@@ -17,6 +17,14 @@ interface ImportMetaEnv {
    * both 'true', since signing in exists solely to unlock paid features.
    */
   readonly VITE_ENABLE_PAID_FEATURES?: string
+  /**
+   * Base URL of clockflux-subscription-front, the marketing/pricing +
+   * checkout app — where the Settings page's "Upgrade to Pro" link sends a
+   * Free user. Falls back to the production subscription site so nothing
+   * breaks if it's left unset; override for local dev against a subscription
+   * app running elsewhere.
+   */
+  readonly VITE_SUBSCRIPTION_URL?: string
 }
 
 interface ImportMeta {
