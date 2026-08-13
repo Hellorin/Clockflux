@@ -51,16 +51,15 @@
 
         <img class="landing__logo" src="/icon-192.png" width="72" height="72" alt="" />
         <p class="landing__eyebrow">Work hours tracker · Progressive web app</p>
-        <h1 class="landing__title" id="landing-title">Track your work hours, privately</h1>
+        <h1 class="landing__title" id="landing-title">Track your work hours</h1>
         <p class="landing__lede">
           Clockflux is a lightweight time tracker for your working day. Tap once to check in,
           tap again to check out, and it keeps the running totals for you — today, this week,
-          and across the year. It works offline, it is free, and every hour you log stays in
-          your own browser.
+          and across the year. It works offline, and it is free.
         </p>
 
         <button type="button" class="landing__cta" data-landing-dismiss>Start tracking →</button>
-        <p class="landing__cta-note">No sign-up. Nothing leaves your device.</p>
+        <p class="landing__cta-note">No required sign-up.</p>
 
         <section class="landing__section">
           <h2 class="landing__section-title">Track your day</h2>
@@ -107,23 +106,47 @@
           <h2 class="landing__section-title">Offline and installable</h2>
           <p class="landing__text">
             Clockflux is a progressive web app: install it on a phone, tablet, or desktop and
-            it opens like any other app and works with no internet connection. The base app is
-            free, with no account to create and no backend to trust — all of your session data
-            is written to your browser's local storage and never sent anywhere.
+            it opens like any other app. The free version has no account and no backend at
+            all — every session is written straight to your browser's local storage and
+            never sent anywhere — so it works with no internet connection by construction,
+            not just as a nice-to-have.
           </p>
+        </section>
+
+        <section class="landing__section landing__section--plans">
+          <h2 class="landing__section-title">Free today, Pro coming soon</h2>
+          <p class="landing__text">
+            Everything above — the tracker, calendar, holiday allowance, and health view — is
+            entirely free, works offline, and needs no account. That stays true for good:
+            nothing here moves behind a paywall later.
+          </p>
+          <p class="landing__pro-heading">
+            <span class="settings-sync-star" aria-hidden="true">✦</span>
+            <strong>Clockflux Pro</strong>
+            <span class="landing__badge">Coming soon</span>
+          </p>
+          <p class="landing__text">Adds, on top of everything free above:</p>
+          <ul class="landing__plan-list">
+            <li>Cloud sync across every device you use Clockflux on</li>
+            <li>Custom light and dark themes</li>
+            <li>Holiday carryover into the new year</li>
+            <li>CSV, PDF, and calendar (.ics) export</li>
+            <li>Unlimited history, with nothing archived or trimmed</li>
+            <li>A custom daily target instead of the default 8 hours</li>
+          </ul>
         </section>
 
         <section class="landing__section" id="privacy">
           <h2 class="landing__section-title">Privacy</h2>
           <p class="landing__text">
-            Everything you track is written to your own browser's local storage and stays
+            On the free version, everything you track is written to your own browser's local storage and stays
             there. Clockflux keeps four entries: <code>app</code> for your sessions and
             days off, <code>appSettings</code> for your holiday allowance and start
             date, <code>hoursFormat</code> for whether you prefer decimal or h:mm, and
             <code>appVisited</code> to remember that you have seen this page. None of it
             is sent anywhere, and there is no account and no server holding a copy — which
             also means that clearing your browser data for this site erases your history for
-            good.
+            good. Just keep in mind that if you clear your cache, you might lose data. Think about Clockflux Pro ✦ to avoid losing anything.
           </p>
           <p class="landing__text">
             The site uses Vercel Web Analytics to count visits. It records page views and

@@ -2634,6 +2634,42 @@ input[type="time"]:focus {
   color: var(--text);
 }
 
+.landing__pro-heading {
+  margin: 1rem 0 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.45em;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.landing__pro-heading .settings-sync-star {
+  align-self: center;
+}
+
+.landing__badge {
+  display: inline-block;
+  padding: 0.15em 0.6em;
+  border-radius: 999px;
+  border: 1px solid var(--accent-in);
+  color: var(--accent-in);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.landing__plan-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+.landing__plan-list li + li { margin-top: 0.2rem; }
+
 .landing__footer {
   margin-top: 2rem;
   display: flex;
