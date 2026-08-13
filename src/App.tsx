@@ -32,6 +32,8 @@ const AUTH_ENABLED = import.meta.env.VITE_ENABLE_AUTH === 'true'
 // this is the flag future paid tabs/features should check, and it's what
 // login is gated on below — signing in only exists to unlock paid features.
 const PAID_FEATURES_ENABLED = import.meta.env.VITE_ENABLE_PAID_FEATURES === 'true'
+// Where the Settings page's "Upgrade to Pro" link sends a Free user.
+const SUBSCRIPTION_URL = import.meta.env.VITE_SUBSCRIPTION_URL || 'https://subscription.clockflux.app'
 
 interface SelectedDay {
   dateKey: string
@@ -78,6 +80,10 @@ export default function App() {
   // only takes effect once the paid-features system is actually switched on;
   // with it off, everyone keeps the unrestricted behavior they have now.
   const paidGatingActive = AUTH_ENABLED && PAID_FEATURES_ENABLED
+  // Whether to show the Settings page's Pro feature showcase/upsell: only
+  // once gating is actually live, and only to callers who don't already
+  // have Pro (an already-Pro user has nothing left to be sold).
+  const showUpgrade = paidGatingActive && user?.plan !== 'pro'
   const unlimitedHistoryEnabled = !paidGatingActive || (user?.plan === 'pro' && enabledViews.has('unlimited-history'))
   // Null when paid gating isn't active at all (nothing to report — everyone's
   // unrestricted and there's no plan to contrast it with). Otherwise tells
@@ -327,6 +333,8 @@ export default function App() {
             user={user}
             onSignIn={signIn}
             onSignOut={handleSignOut}
+            showUpgrade={showUpgrade}
+            subscriptionUrl={SUBSCRIPTION_URL}
           />
         )}
       </main>
