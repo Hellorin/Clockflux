@@ -4,6 +4,7 @@ import { VISIT_STORAGE_KEY } from '../repositories/localStorageVisitRepository'
 import { STORAGE_KEY as TIME_ENTRIES_STORAGE_KEY } from '../repositories/localStorageTimeEntriesRepository'
 import { STORAGE_KEY as SETTINGS_STORAGE_KEY } from '../repositories/localStorageSettingsRepository'
 import { STORAGE_KEY as PREFERENCES_STORAGE_KEY } from '../repositories/localStoragePreferencesRepository'
+import { INSTALL_STORAGE_KEY } from '../repositories/localStorageInstallRepository'
 // Vite's ?raw loader, so this needs no node typings.
 import html from '../../index.html?raw'
 import robots from '../../public/robots.txt?raw'
@@ -63,6 +64,7 @@ describe('index.html', () => {
       SETTINGS_STORAGE_KEY,
       PREFERENCES_STORAGE_KEY,
       VISIT_STORAGE_KEY,
+      INSTALL_STORAGE_KEY,
     ]) {
       expect(html).toContain(`<code>${key}</code>`)
     }
