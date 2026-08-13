@@ -1419,6 +1419,40 @@ input[type="time"]:focus {
   opacity: 0.85;
 }
 
+.modal-save-btn--danger {
+  background: var(--accent-out);
+  color: #fff;
+}
+
+.modal-confirm-message {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.modal-actions--split {
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.modal-secondary-btn {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.5rem 1.25rem;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+
+.modal-secondary-btn:hover {
+  opacity: 0.8;
+}
+
 /* ─── Celebration Overlay ───────────────────────────────────────────────── */
 .celebration-overlay {
   position: fixed;
@@ -1764,6 +1798,23 @@ input[type="time"]:focus {
 
 .settings-sync-icon--spinning {
   animation: spin 1s linear infinite;
+}
+
+.settings-cancel-btn {
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+}
+
+.settings-cancel-btn:disabled {
+  cursor: default;
+  opacity: 0.7;
 }
 
 @keyframes spin {

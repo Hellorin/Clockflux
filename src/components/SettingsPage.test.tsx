@@ -254,4 +254,79 @@ describe('SettingsPage', () => {
     fireEvent.click(checkbox)
     expect(onHolidayCarryoverEnabledChange).toHaveBeenCalledWith(true)
   })
+
+  it('hides the Billing section by default', () => {
+    render(
+      <SettingsPage
+        allowance={24}
+        onAllowanceChange={() => {}}
+        startDate={null}
+        onStartDateChange={() => {}}
+        accrualMode="gradual"
+        onAccrualModeChange={() => {}}
+      />
+    )
+    expect(screen.queryByText('Billing')).not.toBeInTheDocument()
+  })
+
+  it('cancels the subscription only after the user confirms in the popup', () => {
+    const onCancelSubscription = vi.fn()
+    render(
+      <SettingsPage
+        allowance={24}
+        onAllowanceChange={() => {}}
+        startDate={null}
+        onStartDateChange={() => {}}
+        accrualMode="gradual"
+        onAccrualModeChange={() => {}}
+        showBilling
+        onCancelSubscription={onCancelSubscription}
+      />
+    )
+    fireEvent.click(screen.getByText('Billing'))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel subscription' }))
+
+    // The confirmation popup is now open; dismissing it should not cancel.
+    fireEvent.click(screen.getByRole('button', { name: 'Keep subscription' }))
+    expect(onCancelSubscription).not.toHaveBeenCalled()
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel subscription' }))
+    // Two "Cancel subscription" buttons now exist: the settings one and the popup's confirm button.
+    const confirmButtons = screen.getAllByRole('button', { name: 'Cancel subscription' })
+    fireEvent.click(confirmButtons[confirmButtons.length - 1])
+    expect(onCancelSubscription).toHaveBeenCalled()
+  })
+
+  it('shows a cancelling state and, once cancelled, a status message instead of the button', () => {
+    const { rerender } = render(
+      <SettingsPage
+        allowance={24}
+        onAllowanceChange={() => {}}
+        startDate={null}
+        onStartDateChange={() => {}}
+        accrualMode="gradual"
+        onAccrualModeChange={() => {}}
+        showBilling
+        isCancellingSubscription
+      />
+    )
+    fireEvent.click(screen.getByText('Billing'))
+    expect(screen.getByRole('button', { name: 'Cancelling…' })).toBeDisabled()
+
+    rerender(
+      <SettingsPage
+        allowance={24}
+        onAllowanceChange={() => {}}
+        startDate={null}
+        onStartDateChange={() => {}}
+        accrualMode="gradual"
+        onAccrualModeChange={() => {}}
+        showBilling
+        cancelAtPeriodEnd
+      />
+    )
+    expect(screen.queryByRole('button', { name: /Cancel/ })).not.toBeInTheDocument()
+    expect(screen.getByText('Cancels at the end of your current billing period')).toBeInTheDocument()
+  })
 })

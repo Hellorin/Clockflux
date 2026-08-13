@@ -71,6 +71,13 @@ export function useAuth() {
     })
   }, [])
 
+  // Optimistically patches the cached user (e.g. right after a successful
+  // subscription cancellation), ahead of the next heartbeat refresh
+  // confirming it from the backend.
+  const updateUser = useCallback((patch: Partial<AuthUser>) => {
+    setUser(authService.updateUser(patch))
+  }, [])
+
   const signOut = useCallback(() => {
     authService.signOut()
     setUser(null)
@@ -129,5 +136,5 @@ export function useAuth() {
     }
   }, [isSignedIn])
 
-  return { user, features, accessToken, signIn, signOut }
+  return { user, features, accessToken, signIn, signOut, updateUser }
 }

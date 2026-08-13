@@ -1,8 +1,9 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { getProratedAllowance } from '../services/ptoService'
 import { formatHolidayDays } from '../utils/holidays'
 import SettingsSection from './SettingsSection'
 import ThemeColorDropdown from './ThemeColorDropdown'
+import ConfirmDialog from './ConfirmDialog'
 import { DARK_THEME_OPTIONS, LIGHT_THEME_OPTIONS } from '../constants/themeColors'
 import type { HolidayAccrualMode } from '../types'
 
@@ -34,9 +35,15 @@ interface SettingsPageProps {
   showHolidayCarryover?: boolean
   holidayCarryoverEnabled?: boolean
   onHolidayCarryoverEnabledChange?: (value: boolean) => void
+  /** Cancel-subscription control, shown only to Pro users. */
+  showBilling?: boolean
+  cancelAtPeriodEnd?: boolean
+  isCancellingSubscription?: boolean
+  onCancelSubscription?: () => void
 }
 
-export default function SettingsPage({ allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange, showSync = false, lastSyncedAt = null, isSyncing = false, onSyncNow, showThemes = false, themeLightColor = null, themeDarkColor = null, onThemeLightColorChange, onThemeDarkColorChange, onPreviewTheme, onPreviewThemeEnd, showDailyTarget = false, dailyTargetHours = 8, onDailyTargetHoursChange, showHolidayCarryover = false, holidayCarryoverEnabled = false, onHolidayCarryoverEnabledChange }: SettingsPageProps) {
+export default function SettingsPage({ allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange, showSync = false, lastSyncedAt = null, isSyncing = false, onSyncNow, showThemes = false, themeLightColor = null, themeDarkColor = null, onThemeLightColorChange, onThemeDarkColorChange, onPreviewTheme, onPreviewThemeEnd, showDailyTarget = false, dailyTargetHours = 8, onDailyTargetHoursChange, showHolidayCarryover = false, holidayCarryoverEnabled = false, onHolidayCarryoverEnabledChange, showBilling = false, cancelAtPeriodEnd = false, isCancellingSubscription = false, onCancelSubscription }: SettingsPageProps) {
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const year = useMemo(() => new Date().getFullYear(), [])
   const proratedAllowance = getProratedAllowance(startDate, allowance, year)
   const isProrated = startDate && proratedAllowance !== allowance
@@ -186,6 +193,38 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
           </label>
         )}
       </SettingsSection>
+
+      {showBilling && (
+        <SettingsSection title="Billing">
+          <div className="settings-field">
+            <span className="settings-field-label">Subscription</span>
+            {cancelAtPeriodEnd ? (
+              <span className="settings-note">Cancels at the end of your current billing period</span>
+            ) : (
+              <button
+                type="button"
+                className="settings-cancel-btn"
+                disabled={isCancellingSubscription}
+                onClick={() => setShowCancelConfirm(true)}
+              >
+                {isCancellingSubscription ? 'Cancelling…' : 'Cancel subscription'}
+              </button>
+            )}
+          </div>
+        </SettingsSection>
+      )}
+
+      {showCancelConfirm && (
+        <ConfirmDialog
+          title="Cancel subscription?"
+          message="You’ll keep Pro access until the end of your current billing period, then your plan will drop to Free."
+          confirmLabel="Cancel subscription"
+          cancelLabel="Keep subscription"
+          danger
+          onConfirm={() => { setShowCancelConfirm(false); onCancelSubscription?.() }}
+          onCancel={() => setShowCancelConfirm(false)}
+        />
+      )}
     </section>
   )
 }
