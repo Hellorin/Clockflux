@@ -168,6 +168,23 @@ describe('signOut', () => {
     expect(localStorage.getItem(SETTINGS_STORAGE_KEY)).not.toBeNull()
   })
 
+  it('keeps a pro user\'s time entries and settings when the caller passes safeToWipe: false', async () => {
+    saveUser(user)
+    localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'a-token')
+    localStorage.setItem(TIME_ENTRIES_STORAGE_KEY, JSON.stringify({ entries: [] }))
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ annualHolidayAllowance: 30 }))
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 204 }))
+
+    // e.g. sign-out couldn't confirm the last edit made it to the server
+    // (offline, or the flush itself failed) — local data must survive.
+    await signOut(false)
+
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+    expect(localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)).toBeNull()
+    expect(localStorage.getItem(TIME_ENTRIES_STORAGE_KEY)).not.toBeNull()
+    expect(localStorage.getItem(SETTINGS_STORAGE_KEY)).not.toBeNull()
+  })
+
   it('still clears local state when the network request fails', async () => {
     saveUser(user)
     localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'a-token')

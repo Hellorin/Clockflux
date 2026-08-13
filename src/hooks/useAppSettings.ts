@@ -2,9 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import * as settingsService from '../services/settingsService'
 import { getServerSettings, putServerSettings } from '../services/settingsSyncService'
 import { isValidDarkThemeColor, isValidLightThemeColor } from '../constants/themeColors'
+import { localStorageOwnershipRepository } from '../repositories/localStorageOwnershipRepository'
 import type { HolidayAccrualMode, Settings } from '../types'
 
-const DEFAULTS: Settings = {
+export const DEFAULT_SETTINGS: Settings = {
   annualHolidayAllowance: 25,
   employmentStartDate: null,
   holidayAccrualMode: 'gradual',
@@ -16,7 +17,7 @@ const DEFAULTS: Settings = {
 
 function loadSettings(): Settings {
   const parsed = settingsService.loadSettingsRaw() ?? {}
-  const merged = { ...DEFAULTS, ...parsed }
+  const merged = { ...DEFAULT_SETTINGS, ...parsed }
   // Guard against a stale value from a previous release's swatch list (or
   // corrupted storage) no longer being one of the curated options.
   if (!isValidLightThemeColor(merged.themeLightColor)) merged.themeLightColor = null
@@ -32,13 +33,24 @@ function loadSettings(): Settings {
  * only ever a cache of whatever it last echoed back, never trusted on its own.
  * Pass undefined/null for anonymous/local-only use, which behaves exactly as
  * before (no network involved).
+ *
+ * ownerId: the signed-in user's stable id (see localDataOwnershipService).
+ * Belt-and-suspenders check alongside App.tsx's sign-in reconciliation
+ * effect — persist() won't push local settings to the server unless the
+ * local data's ownership tag actually matches whoever's signed in, so a
+ * settings edit can't race ahead of ownership reconciliation and leak one
+ * account's local settings into another's cloud copy.
  */
-export function useAppSettings(accessToken?: string | null) {
+export function useAppSettings(accessToken?: string | null, ownerId?: string | null) {
   const [settings, setSettings] = useState(loadSettings)
   const accessTokenRef = useRef(accessToken)
   useEffect(() => {
     accessTokenRef.current = accessToken
   }, [accessToken])
+  const ownerIdRef = useRef(ownerId)
+  useEffect(() => {
+    ownerIdRef.current = ownerId
+  }, [ownerId])
 
   // On sign-in (accessToken becomes available), pull the server's saved
   // settings and adopt them as truth. This is what closes the loophole on
@@ -67,6 +79,8 @@ export function useAppSettings(accessToken?: string | null) {
     settingsService.saveSettings(next)
     const token = accessTokenRef.current
     if (!token) return
+    const owner = ownerIdRef.current
+    if (owner && localStorageOwnershipRepository.loadOwnerId() !== owner) return
     putServerSettings(token, next).then(serverSettings => {
       if (!serverSettings) return
       setSettings(serverSettings)
@@ -141,7 +155,7 @@ export function useAppSettings(accessToken?: string | null) {
   // only — the data just came from the server (via /sync), so pushing it
   // straight back out to /api/v1/settings would be redundant.
   const replaceSettings = useCallback((next: Settings) => {
-    const merged = { ...DEFAULTS, ...next }
+    const merged = { ...DEFAULT_SETTINGS, ...next }
     if (!isValidLightThemeColor(merged.themeLightColor)) merged.themeLightColor = null
     if (!isValidDarkThemeColor(merged.themeDarkColor)) merged.themeDarkColor = null
     settingsService.saveSettings(merged)

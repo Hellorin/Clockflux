@@ -20,6 +20,7 @@ import * as preferencesService from './services/preferencesService'
 import * as authService from './services/authService'
 import { requestExport, downloadExportFile } from './services/exportService'
 import { cancelSubscription } from './services/billingService'
+import { reconcileOwner } from './services/localDataOwnershipService'
 import type { ExportFormat } from './services/exportService'
 import type { Milestone } from './hooks/useTimeTracker'
 import type { HoursFormat, Session } from './types'
@@ -48,7 +49,7 @@ export default function App() {
   // Settings round-trip through the server-validated /api/v1/settings
   // endpoint whenever signed in (see useAppSettings), which is what actually
   // enforces the Pro-only fields below against the caller's real plan.
-  const { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode, setDailyTargetHours, setHolidayCarryoverEnabled, setThemeLightColor, setThemeDarkColor, replaceSettings } = useAppSettings(accessToken)
+  const { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode, setDailyTargetHours, setHolidayCarryoverEnabled, setThemeLightColor, setThemeDarkColor, replaceSettings } = useAppSettings(accessToken, user?.email)
   const enabledViews = new Set(features.map(feature => feature.key))
   const syncEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('cloud-sync')
   const themesEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('themes')
@@ -86,7 +87,27 @@ export default function App() {
     ? (unlimitedHistoryEnabled ? 'unlimited' : 'limited')
     : null
   const { isCheckedIn, checkIn, checkOut, todaySessions, todayKey, allDays, setDaySessions, days, daysOff, setDayOffType, setDaysOffTypeBulk, replaceAll, isTodayOff, todayTargetMs, personalDaysUsedThisYear, setMilestoneCallback, weekTargetMs, weekTotalOtherDaysMs, allPastWorkdayOvertimeMs, stats } = useTimeTracker(settings.dailyTargetHours, unlimitedHistoryEnabled)
-  const { lastSyncedAt, isSyncing, syncNow } = useSync({
+
+  // Local storage has no built-in owner, so a second, different account
+  // signing in on this browser could otherwise inherit — and then overwrite
+  // — whatever's already here (see localDataOwnershipService.ts). Runs
+  // ahead of useSync/useAppSettings' own sign-in effects (declared below)
+  // so any mismatched data gets set aside before anything tries to push it.
+  const currentLocalDataRef = useRef({ days, daysOff, settings })
+  currentLocalDataRef.current = { days, daysOff, settings }
+  const reconciledOwnerRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!user?.email || reconciledOwnerRef.current === user.email) return
+    reconciledOwnerRef.current = user.email
+    const result = reconcileOwner(user.email, currentLocalDataRef.current)
+    if (result.data) {
+      replaceAll({ days: result.data.days, daysOff: result.data.daysOff })
+      replaceSettings(result.data.settings)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run when the signed-in identity changes; the local data read via currentLocalDataRef is checked at that moment, not tracked as a dep (mirrors useSync's latestDataRef pattern)
+  }, [user?.email])
+
+  const { lastSyncedAt, isSyncing, isDirty, syncNow } = useSync({
     enabled: syncEnabled,
     days,
     daysOff,
@@ -96,6 +117,17 @@ export default function App() {
       replaceSettings(restored.settings)
     },
   })
+  // Gives sign-out a chance to confirm the cloud copy is current before
+  // authService risks wiping local Pro data (see authService.signOut's
+  // safeToWipe param): if there's anything unsynced, attempt one last
+  // forced push and only report it safe if that push actually succeeded.
+  // An offline/failed flush correctly leaves safeToWipe false, which keeps
+  // the local copy around exactly like a free user's.
+  const handleSignOut = useCallback(async () => {
+    const safeToWipe = syncEnabled && isDirty ? await syncNow(true) : true
+    signOut(safeToWipe)
+  }, [syncEnabled, isDirty, syncNow, signOut])
+
   // If the active tab's feature gets disabled out from under the user (e.g.
   // after sign-out drops an authenticated-only feature), fall back to the
   // first tab that's still enabled rather than rendering a dead tab. Settings
@@ -294,7 +326,7 @@ export default function App() {
             showAccount={paidGatingActive}
             user={user}
             onSignIn={signIn}
-            onSignOut={signOut}
+            onSignOut={handleSignOut}
           />
         )}
       </main>
