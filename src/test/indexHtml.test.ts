@@ -114,4 +114,8 @@ describe('crawler files', () => {
     expect(loc).toBe(CANONICAL)
     expect(robots).toContain(`Sitemap: ${new URL('sitemap.xml', CANONICAL).href}`)
   })
+
+  it('sitemap.xml lists the about page', () => {
+    expect(sitemap).toContain('<loc>https://clockflux.app/about/</loc>')
+  })
 })
