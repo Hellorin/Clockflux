@@ -78,8 +78,12 @@ export function useAuth() {
     setUser(authService.updateUser(patch))
   }, [])
 
-  const signOut = useCallback(() => {
-    Promise.resolve(authService.signOut()).then(() => {
+  // safeToWipe: whether the caller has confirmed local Pro data is fully
+  // reflected on the server (e.g. a successful final flush) — see
+  // authService.signOut(). Defaults to false: an unconfirmed sign-out should
+  // never risk wiping data that might not have made it to the cloud yet.
+  const signOut = useCallback((safeToWipe: boolean = false) => {
+    Promise.resolve(authService.signOut(safeToWipe)).then(() => {
       getFeaturesOrDefault().then(setFeatures)
     })
     setUser(null)
@@ -108,7 +112,10 @@ export function useAuth() {
       if (cancelled) return
 
       if (!refreshed) {
-        authService.signOut()
+        // The session died (refresh token expired/revoked/signed out
+        // elsewhere) — that's not evidence the cloud copy is current, so
+        // never wipe local Pro data here.
+        authService.signOut(false)
         setUser(null)
         setAccessToken(null)
         getFeaturesOrDefault().then(f => {

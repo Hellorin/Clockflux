@@ -75,7 +75,9 @@ describe('useAuth', () => {
       await Promise.resolve()
     })
 
-    expect(authService.signOut).toHaveBeenCalled()
+    // A dead refresh token isn't evidence the cloud copy is current, so this
+    // automatic sign-out must never risk wiping local Pro data.
+    expect(authService.signOut).toHaveBeenCalledWith(false)
     expect(result.current.user).toBeNull()
     expect(result.current.accessToken).toBeNull()
   })

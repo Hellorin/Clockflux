@@ -84,16 +84,25 @@ export function loadAccessToken(): string | null {
  * can't strand the user in a "still signed in" state.
  *
  * The time-entry and settings data is only cleared if the signing-out user
- * was on the Pro plan. For a free user, localStorage is the *only* copy of
- * their data — there's no cloud backup (see useSync.ts, Pro-only) — so
- * wiping it on every sign-out would be a straight-up data loss bug: sign
- * out, sign back in, history gone. For a Pro user the cloud snapshot is
- * authoritative, so it's safe to drop the local copy, and doing so is what
- * stops a shared/borrowed device handing the next signed-in user the
- * previous Pro account's work history — or worse, syncing it into their
- * cloud snapshot (see useSync.ts's push-on-change).
+ * was on the Pro plan *and* the caller confirms (via `safeToWipe`) that the
+ * local copy is fully reflected on the server. For a free user, localStorage
+ * is the *only* copy of their data — there's no cloud backup (see
+ * useSync.ts, Pro-only) — so wiping it on every sign-out would be a
+ * straight-up data loss bug: sign out, sign back in, history gone. For a Pro
+ * user the cloud snapshot is normally authoritative, so it's safe to drop
+ * the local copy — and doing so is what stops a shared/borrowed device
+ * handing the next signed-in user the previous Pro account's work history,
+ * or worse, syncing it into their cloud snapshot (see useSync.ts's
+ * push-on-change) — but only once the caller has verified nothing local is
+ * still unsynced (e.g. an offline edit whose push never landed). When in
+ * doubt (`safeToWipe: false`), local data is left alone even for a Pro user,
+ * matching the free-user fallback: an unsynced local copy beats no copy.
+ *
+ * `safeToWipe` defaults to true for callers that have no way to check (e.g.
+ * an automatic sign-out triggered by a dead refresh token) should instead
+ * pass `false` explicitly — see useAuth.ts.
  */
-export async function signOut(): Promise<void> {
+export async function signOut(safeToWipe: boolean = true): Promise<void> {
   const wasPro = loadUser()?.plan === 'pro'
 
   try {
@@ -106,7 +115,7 @@ export async function signOut(): Promise<void> {
   }
   resolveRepository().clearUser()
   resolveRepository().clearAccessToken()
-  if (wasPro) {
+  if (wasPro && safeToWipe) {
     localStorage.removeItem(TIME_ENTRIES_STORAGE_KEY)
     localStorage.removeItem(SETTINGS_STORAGE_KEY)
   }

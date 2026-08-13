@@ -33,3 +33,26 @@ export interface AuthRepository {
   hasSignedInBefore(): boolean
   markSignedInBefore(): void
 }
+
+// Tracks, per device, the last SyncData snapshot this device knows to be in
+// sync with the backend — either just pushed, or just pulled. Survives
+// reloads (unlike an in-memory ref), so useSync can tell "nothing changed
+// since last time" from "something changed" instead of treating every page
+// load as a fresh push. See useSync.ts's reconcile-on-enable logic.
+export interface SyncRepository {
+  loadLastSyncedSnapshot(): string | null
+  saveLastSyncedSnapshot(value: string): void
+  clearLastSyncedSnapshot(): void
+}
+
+// One device's local time-entries/settings data belongs to whichever account
+// last claimed it — tracked here so a second, different account signing in
+// on the same browser never inherits (or overwrites) the first account's
+// data. See services/localDataOwnershipService.ts.
+export interface OwnershipRepository {
+  loadOwnerId(): string | null
+  saveOwnerId(ownerId: string): void
+  loadBackup(ownerId: string): TimeEntriesData & { settings: Settings } | null
+  saveBackup(ownerId: string, data: TimeEntriesData & { settings: Settings }): void
+  clearBackup(ownerId: string): void
+}
