@@ -1,8 +1,20 @@
+import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const rootDir = fileURLToPath(new URL('.', import.meta.url))
+
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(rootDir, 'index.html'),
+        about: resolve(rootDir, 'about/index.html'),
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({
@@ -34,7 +46,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         // Without this the service worker answers navigations to these paths
         // with the SPA shell instead of the real files.
-        navigateFallbackDenylist: [/^\/robots\.txt$/, /^\/sitemap\.xml$/]
+        navigateFallbackDenylist: [/^\/robots\.txt$/, /^\/sitemap\.xml$/, /^\/about\//]
       }
     })
   ],
