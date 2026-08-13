@@ -1,4 +1,6 @@
 import { localStorageAuthRepository } from '../repositories/localStorageAuthRepository'
+import { STORAGE_KEY as TIME_ENTRIES_STORAGE_KEY } from '../repositories/localStorageTimeEntriesRepository'
+import { STORAGE_KEY as SETTINGS_STORAGE_KEY } from '../repositories/localStorageSettingsRepository'
 import type { AuthRepository } from '../repositories/types'
 import type { AuthUser } from '../types'
 
@@ -74,9 +76,29 @@ export function loadAccessToken(): string | null {
   return resolveRepository().loadAccessToken()
 }
 
-export function signOut(): void {
+/**
+ * Ends the session both locally and on the server: deletes the stored
+ * refresh token and clears its HttpOnly cookie via /api/v1/auth/logout,
+ * then clears everything local — the cached user/access token plus the
+ * time-entry and settings data, so a shared/borrowed device doesn't hand
+ * the next signed-in user the previous account's work history (or worse,
+ * sync it into their cloud snapshot). Local state is cleared regardless of
+ * whether the network call succeeds, so a flaky connection can't strand the
+ * user in a "still signed in" state.
+ */
+export async function signOut(): Promise<void> {
+  try {
+    await fetch(`${import.meta.env.VITE_API_URL}/api/v1/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+  } catch {
+    // Best-effort — local state is cleared below regardless.
+  }
   resolveRepository().clearUser()
   resolveRepository().clearAccessToken()
+  localStorage.removeItem(TIME_ENTRIES_STORAGE_KEY)
+  localStorage.removeItem(SETTINGS_STORAGE_KEY)
 }
 
 /**
