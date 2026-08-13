@@ -153,6 +153,16 @@ export function computeWeekProgress(weekDays: Date[], days: DaysMap, daysOff: Da
 }
 
 /**
+ * Returns a time-of-day greeting for the given name, e.g. "Good morning Ada".
+ * Morning is before noon, afternoon before 6pm, evening otherwise.
+ */
+export function getGreeting(name: string, now: Date = new Date()): string {
+  const hour = now.getHours()
+  const partOfDay = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening'
+  return `Good ${partOfDay} ${name}`
+}
+
+/**
  * Formats an ISO timestamp as a local time string, e.g. "09:03".
  */
 export function formatTime(isoString: string): string {

@@ -27,4 +27,9 @@ export interface AuthRepository {
   loadAccessToken(): string | null
   saveAccessToken(accessToken: string): void
   clearAccessToken(): void
+  // Persists past signOut()/session expiry (unlike loadUser/loadAccessToken
+  // above, which are cleared then) so the app can tell "never signed in on
+  // this device" apart from "signed in before, just not connected right now".
+  hasSignedInBefore(): boolean
+  markSignedInBefore(): void
 }

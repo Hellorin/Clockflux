@@ -163,6 +163,18 @@ body {
   color: var(--text);
 }
 
+.app-greeting {
+  margin: 0.35rem 0 0;
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+
+.app-signed-out-notice {
+  font-size: 0.85rem;
+  font-style: italic;
+  max-width: 32rem;
+}
+
 .app-date {
   margin: 0.25rem 0 0;
   font-size: 0.9rem;

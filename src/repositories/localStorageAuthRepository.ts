@@ -3,6 +3,7 @@ import type { AuthRepository } from './types'
 
 const STORAGE_KEY = 'appUser'
 const ACCESS_TOKEN_STORAGE_KEY = 'appAccessToken'
+const HAS_SIGNED_IN_BEFORE_KEY = 'appHasSignedInBefore'
 
 export const localStorageAuthRepository: AuthRepository = {
   loadUser(): AuthUser | null {
@@ -46,6 +47,20 @@ export const localStorageAuthRepository: AuthRepository = {
   clearAccessToken(): void {
     try {
       localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY)
+    } catch {
+      // Nothing to do if storage is unavailable.
+    }
+  },
+  hasSignedInBefore(): boolean {
+    try {
+      return localStorage.getItem(HAS_SIGNED_IN_BEFORE_KEY) === 'true'
+    } catch {
+      return false
+    }
+  },
+  markSignedInBefore(): void {
+    try {
+      localStorage.setItem(HAS_SIGNED_IN_BEFORE_KEY, 'true')
     } catch {
       // Nothing to do if storage is unavailable.
     }

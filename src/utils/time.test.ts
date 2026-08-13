@@ -10,6 +10,7 @@ import {
   getWeekDays,
   computeWeekProgress,
   getTodayKey,
+  getGreeting,
 } from './time'
 import type { DaysOffMap } from '../types'
 
@@ -56,6 +57,20 @@ describe('formatDuration', () => {
 describe('formatDateKey', () => {
   it('includes the year and does not throw', () => {
     expect(formatDateKey('2026-03-03')).toContain('2026')
+  })
+})
+
+describe('getGreeting', () => {
+  it('says good morning before noon', () => {
+    expect(getGreeting('Ada', new Date('2026-01-01T09:00:00'))).toBe('Good morning Ada')
+  })
+
+  it('says good afternoon between noon and 6pm', () => {
+    expect(getGreeting('Ada', new Date('2026-01-01T14:00:00'))).toBe('Good afternoon Ada')
+  })
+
+  it('says good evening from 6pm onward', () => {
+    expect(getGreeting('Ada', new Date('2026-01-01T20:00:00'))).toBe('Good evening Ada')
   })
 })
 

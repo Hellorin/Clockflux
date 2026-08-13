@@ -16,7 +16,7 @@ import CelebrationOverlay from './components/CelebrationOverlay'
 import HealthPage from './components/HealthPage'
 import HolidayPage from './components/HolidayPage'
 import SettingsPage from './components/SettingsPage'
-import { formatDateKey } from './utils/time'
+import { formatDateKey, getGreeting } from './utils/time'
 import * as preferencesService from './services/preferencesService'
 import * as authService from './services/authService'
 import { requestExport, downloadExportFile } from './services/exportService'
@@ -45,7 +45,7 @@ export default function App() {
   const [celebrationMilestone, setCelebrationMilestone] = useState<Milestone | null>(null)
   const aboutBtnRef = useRef<HTMLButtonElement>(null)
   const { isLandingOpen, openLanding } = useLandingPage({ returnFocusRef: aboutBtnRef })
-  const { user, features, accessToken, signIn, signOut, updateUser } = useAuth()
+  const { user, features, accessToken, signIn, signOut, updateUser, previouslySignedIn } = useAuth()
   // Settings round-trip through the server-validated /api/v1/settings
   // endpoint whenever signed in (see useAppSettings), which is what actually
   // enforces the Pro-only fields below against the caller's real plan.
@@ -183,7 +183,13 @@ export default function App() {
       <header className="app-header">
         {/* Not an <h1>: the landing page in index.html owns the document's only
             top-level heading, so the SEO signal stays unambiguous. */}
-        <p className="app-title">Clockflux</p>
+        <p className="app-title">Clockflux{PAID_FEATURES_ENABLED && (user?.plan === 'pro' ? ' Pro ✦' : ' Free')}</p>
+        {AUTH_ENABLED && PAID_FEATURES_ENABLED && user && <p className="app-greeting">{getGreeting(user.name)}</p>}
+        {AUTH_ENABLED && PAID_FEATURES_ENABLED && !user && previouslySignedIn && (
+          <p className="app-greeting app-signed-out-notice">
+            You've signed in on this device before but aren't connected right now — if you're a Pro user, sign in to restore the full features.
+          </p>
+        )}
         <p className="app-date">{formatDateKey(todayKey)}</p>
         {AUTH_ENABLED && PAID_FEATURES_ENABLED && <GoogleSignInButton user={user} onSignIn={signIn} onSignOut={signOut} />}
         <button

@@ -39,6 +39,21 @@ export function loadUser(): AuthUser | null {
 
 export function saveUser(user: AuthUser): void {
   resolveRepository().saveUser(user)
+  // Deliberately never cleared by signOut(): this is what lets the app
+  // recognize "signed in on this device before" even after the session
+  // itself has expired or been signed out of, so it can explain a missing
+  // Pro badge instead of silently looking like a downgrade.
+  resolveRepository().markSignedInBefore()
+}
+
+/**
+ * True if this device has ever completed a sign-in, regardless of whether
+ * the current session is still valid. Used to tell "never signed in" apart
+ * from "signed in before, just not connected right now" when `loadUser()`
+ * is null.
+ */
+export function hasSignedInBefore(): boolean {
+  return resolveRepository().hasSignedInBefore()
 }
 
 /**

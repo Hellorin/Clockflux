@@ -16,7 +16,7 @@ describe('App', () => {
 
   it('renders the tracker view by default', () => {
     render(<App />)
-    expect(screen.getByText('Clockflux')).toBeInTheDocument()
+    expect(screen.getByText('Clockflux Free')).toBeInTheDocument()
     expect(screen.getByRole('switch')).toBeInTheDocument()
   })
 

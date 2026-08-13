@@ -136,5 +136,10 @@ export function useAuth() {
     }
   }, [isSignedIn])
 
-  return { user, features, accessToken, signIn, signOut, updateUser }
+  // Surfaces "signed in on this device before" even while signed out, so the
+  // UI can explain a missing Pro badge (session expired / signed out
+  // elsewhere) rather than have it silently look like a plan downgrade.
+  const previouslySignedIn = !user && authService.hasSignedInBefore()
+
+  return { user, features, accessToken, signIn, signOut, updateUser, previouslySignedIn }
 }
