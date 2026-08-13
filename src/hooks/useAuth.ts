@@ -79,10 +79,11 @@ export function useAuth() {
   }, [])
 
   const signOut = useCallback(() => {
-    authService.signOut()
+    Promise.resolve(authService.signOut()).then(() => {
+      getFeaturesOrDefault().then(setFeatures)
+    })
     setUser(null)
     setAccessToken(null)
-    getFeaturesOrDefault().then(setFeatures)
   }, [])
 
   // Keeps a signed-in session alive past the access token's short expiry:

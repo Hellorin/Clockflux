@@ -1,4 +1,6 @@
 import { localStorageAuthRepository } from '../repositories/localStorageAuthRepository'
+import { STORAGE_KEY as TIME_ENTRIES_STORAGE_KEY } from '../repositories/localStorageTimeEntriesRepository'
+import { STORAGE_KEY as SETTINGS_STORAGE_KEY } from '../repositories/localStorageSettingsRepository'
 import type { AuthRepository } from '../repositories/types'
 import type { AuthUser } from '../types'
 
@@ -74,9 +76,40 @@ export function loadAccessToken(): string | null {
   return resolveRepository().loadAccessToken()
 }
 
-export function signOut(): void {
+/**
+ * Ends the session both locally and on the server: deletes the stored
+ * refresh token and clears its HttpOnly cookie via /api/v1/auth/logout,
+ * then clears the cached user/access token. Local state is cleared
+ * regardless of whether the network call succeeds, so a flaky connection
+ * can't strand the user in a "still signed in" state.
+ *
+ * The time-entry and settings data is only cleared if the signing-out user
+ * was on the Pro plan. For a free user, localStorage is the *only* copy of
+ * their data — there's no cloud backup (see useSync.ts, Pro-only) — so
+ * wiping it on every sign-out would be a straight-up data loss bug: sign
+ * out, sign back in, history gone. For a Pro user the cloud snapshot is
+ * authoritative, so it's safe to drop the local copy, and doing so is what
+ * stops a shared/borrowed device handing the next signed-in user the
+ * previous Pro account's work history — or worse, syncing it into their
+ * cloud snapshot (see useSync.ts's push-on-change).
+ */
+export async function signOut(): Promise<void> {
+  const wasPro = loadUser()?.plan === 'pro'
+
+  try {
+    await fetch(`${import.meta.env.VITE_API_URL}/api/v1/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+  } catch {
+    // Best-effort — local state is cleared below regardless.
+  }
   resolveRepository().clearUser()
   resolveRepository().clearAccessToken()
+  if (wasPro) {
+    localStorage.removeItem(TIME_ENTRIES_STORAGE_KEY)
+    localStorage.removeItem(SETTINGS_STORAGE_KEY)
+  }
 }
 
 /**
