@@ -15,7 +15,7 @@ describe('signInWithGoogle', () => {
   })
 
   it('returns and persists the user and access token from a successful response', async () => {
-    const user = { name: 'Ada Lovelace', email: 'ada@example.com', picture: 'https://example.com/ada.png', plan: 'pro' }
+    const user = { name: 'Ada Lovelace', email: 'ada@example.com', picture: 'https://example.com/ada.png', plan: 'pro', cancelAtPeriodEnd: false }
     const accessToken = 'access-token-123'
     vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ user, accessToken }), { status: 200 }))
 
@@ -76,7 +76,7 @@ describe('refreshAccessToken', () => {
   })
 
   it('returns and persists the user and access token from a successful response, sending the refresh cookie', async () => {
-    const user = { name: 'Ada Lovelace', email: 'ada@example.com', picture: 'https://example.com/ada.png', plan: 'pro' }
+    const user = { name: 'Ada Lovelace', email: 'ada@example.com', picture: 'https://example.com/ada.png', plan: 'pro', cancelAtPeriodEnd: false }
     const accessToken = 'new-access-token'
     vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ user, accessToken }), { status: 200 }))
 

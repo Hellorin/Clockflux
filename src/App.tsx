@@ -20,6 +20,7 @@ import { formatDateKey } from './utils/time'
 import * as preferencesService from './services/preferencesService'
 import * as authService from './services/authService'
 import { requestExport, downloadExportFile } from './services/exportService'
+import { cancelSubscription } from './services/billingService'
 import type { ExportFormat } from './services/exportService'
 import type { Milestone } from './hooks/useTimeTracker'
 import type { HoursFormat, Session } from './types'
@@ -44,7 +45,7 @@ export default function App() {
   const [celebrationMilestone, setCelebrationMilestone] = useState<Milestone | null>(null)
   const aboutBtnRef = useRef<HTMLButtonElement>(null)
   const { isLandingOpen, openLanding } = useLandingPage({ returnFocusRef: aboutBtnRef })
-  const { user, features, accessToken, signIn, signOut } = useAuth()
+  const { user, features, accessToken, signIn, signOut, updateUser } = useAuth()
   // Settings round-trip through the server-validated /api/v1/settings
   // endpoint whenever signed in (see useAppSettings), which is what actually
   // enforces the Pro-only fields below against the caller's real plan.
@@ -60,6 +61,15 @@ export default function App() {
   const exportCsvEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('export-csv')
   const exportPdfEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('export-pdf')
   const exportIcsEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('export-ics')
+  const billingEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro'
+  const [isCancellingSubscription, setIsCancellingSubscription] = useState(false)
+  const cancelUserSubscription = useCallback(async () => {
+    if (!accessToken) return
+    setIsCancellingSubscription(true)
+    const succeeded = await cancelSubscription(accessToken)
+    if (succeeded) updateUser({ cancelAtPeriodEnd: true })
+    setIsCancellingSubscription(false)
+  }, [accessToken, updateUser])
   // Free plan is capped to the current year everywhere history is read back
   // (History, Calendar, Health, cumulative overtime) — storage and sync
   // still keep every year, see useTimeTracker's unlimitedHistory param.
@@ -263,6 +273,10 @@ export default function App() {
             showHolidayCarryover={holidayCarryoverFeatureEnabled}
             holidayCarryoverEnabled={settings.holidayCarryoverEnabled}
             onHolidayCarryoverEnabledChange={setHolidayCarryoverEnabled}
+            showBilling={billingEnabled}
+            cancelAtPeriodEnd={user?.cancelAtPeriodEnd}
+            isCancellingSubscription={isCancellingSubscription}
+            onCancelSubscription={cancelUserSubscription}
           />
         )}
       </main>

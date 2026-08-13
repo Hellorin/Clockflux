@@ -25,12 +25,34 @@ function isAuthUser(value: unknown): value is AuthUser {
   )
 }
 
+// Normalizes cancelAtPeriodEnd to a boolean, since it's a newer field the
+// backend always sends but a user cached in localStorage before this field
+// existed won't have.
+function normalizeAuthUser(user: AuthUser): AuthUser {
+  return { ...user, cancelAtPeriodEnd: user.cancelAtPeriodEnd === true }
+}
+
 export function loadUser(): AuthUser | null {
-  return resolveRepository().loadUser()
+  const user = resolveRepository().loadUser()
+  return user ? normalizeAuthUser(user) : null
 }
 
 export function saveUser(user: AuthUser): void {
   resolveRepository().saveUser(user)
+}
+
+/**
+ * Merges patch into the currently cached user and persists it — used for
+ * optimistic local updates (e.g. right after cancelling a subscription)
+ * ahead of the next token refresh confirming it from the backend. No-op if
+ * no user is currently signed in.
+ */
+export function updateUser(patch: Partial<AuthUser>): AuthUser | null {
+  const current = loadUser()
+  if (!current) return null
+  const updated = { ...current, ...patch }
+  saveUser(updated)
+  return updated
 }
 
 export function loadAccessToken(): string | null {
@@ -61,9 +83,10 @@ export async function signInWithGoogle(credential: string): Promise<AuthUser | n
     if (!response.ok) return null
     const { user, accessToken } = (await response.json()) as Partial<AuthResponse>
     if (!isAuthUser(user) || typeof accessToken !== 'string') return null
-    saveUser(user)
+    const normalized = normalizeAuthUser(user)
+    saveUser(normalized)
     resolveRepository().saveAccessToken(accessToken)
-    return user
+    return normalized
   } catch {
     return null
   }
@@ -88,9 +111,10 @@ export async function refreshAccessToken(): Promise<AuthUser | null> {
     if (!response.ok) return null
     const { user, accessToken } = (await response.json()) as Partial<AuthResponse>
     if (!isAuthUser(user) || typeof accessToken !== 'string') return null
-    saveUser(user)
+    const normalized = normalizeAuthUser(user)
+    saveUser(normalized)
     resolveRepository().saveAccessToken(accessToken)
-    return user
+    return normalized
   } catch {
     return null
   }

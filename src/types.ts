@@ -47,6 +47,8 @@ export interface AuthUser {
   email: string
   picture: string
   plan: Plan
+  /** True once a Pro user has cancelled but is still within their paid billing period. */
+  cancelAtPeriodEnd: boolean
 }
 
 /** Everything a Pro user's data-sync push/pull carries: time entries plus holiday settings. */

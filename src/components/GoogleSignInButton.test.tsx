@@ -47,7 +47,7 @@ describe('GoogleSignInButton', () => {
     const initialize = vi.fn()
     window.google = { accounts: { id: { initialize, renderButton: vi.fn() } } }
 
-    const user = { name: 'Ada Lovelace', email: 'ada@example.com', picture: '', plan: 'free' as const }
+    const user = { name: 'Ada Lovelace', email: 'ada@example.com', picture: '', plan: 'free' as const, cancelAtPeriodEnd: false }
     render(<GoogleSignInButton user={user} onSignIn={vi.fn()} onSignOut={vi.fn()} />)
 
     expect(initialize).not.toHaveBeenCalled()

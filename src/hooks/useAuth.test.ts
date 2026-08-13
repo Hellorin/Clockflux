@@ -9,7 +9,7 @@ vi.mock('../services/featuresService')
 
 const REFRESH_INTERVAL_MS = 10 * 60 * 1000
 
-const user = { name: 'Ada Lovelace', email: 'ada@example.com', picture: 'https://example.com/ada.png', plan: 'pro' as const }
+const user = { name: 'Ada Lovelace', email: 'ada@example.com', picture: 'https://example.com/ada.png', plan: 'pro' as const, cancelAtPeriodEnd: false }
 
 describe('useAuth', () => {
   beforeEach(() => {
