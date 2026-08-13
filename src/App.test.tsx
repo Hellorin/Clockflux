@@ -16,7 +16,13 @@ describe('App', () => {
 
   it('renders the tracker view by default', () => {
     render(<App />)
-    expect(screen.getByText('Clockflux Free')).toBeInTheDocument()
+    // Not asserting the full "Clockflux Free"/"Clockflux Pro ✦" title: the
+    // " Free"/" Pro ✦" suffix only renders when VITE_ENABLE_PAID_FEATURES is
+    // 'true' (App.tsx), which is a module-level constant read from whatever
+    // .env happens to be on disk when this file is imported — true locally,
+    // unset in CI (no .env there). Match just the stable "Clockflux" prefix
+    // so this test doesn't depend on that ambient env.
+    expect(document.querySelector('.app-title')).toHaveTextContent('Clockflux')
     expect(screen.getByRole('switch')).toBeInTheDocument()
   })
 
