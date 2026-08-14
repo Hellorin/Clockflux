@@ -5,6 +5,7 @@ import { useAppSettings } from './hooks/useAppSettings'
 import { useLandingPage } from './hooks/useLandingPage'
 import { useAuth } from './hooks/useAuth'
 import { useSync } from './hooks/useSync'
+import { useStorageHealth } from './hooks/useStorageHealth'
 import SlideToggle from './components/SlideToggle'
 import LiveTimer from './components/LiveTimer'
 import TodaySummary from './components/TodaySummary'
@@ -135,6 +136,7 @@ export default function App() {
       replaceSettings(restored.settings)
     },
   })
+  const storageWriteFailing = useStorageHealth()
   // Gives sign-out a chance to confirm the cloud copy is current before
   // authService risks wiping local Pro data (see authService.signOut's
   // safeToWipe param): if there's anything unsynced, attempt one last
@@ -291,6 +293,19 @@ export default function App() {
           />
         )}
       </header>
+
+      {/* The repositories swallow a rejected localStorage write so a full quota
+          or a storage-blocking privacy setting can't crash the app mid-render.
+          Without this banner that fix would trade a crash for something worse:
+          the user keeps checking in and out, sees every session on screen, and
+          loses all of it on reload with no idea anything went wrong. */}
+      {storageWriteFailing && (
+        <p className="app-storage-warning" role="alert">
+          This browser is refusing to save data — your hours are only in this tab and
+          will be lost if you reload. Free up storage space, or turn off private/
+          restricted browsing for this site.
+        </p>
+      )}
 
       <main className="app-main">
         {activeView === 'tracker' && (

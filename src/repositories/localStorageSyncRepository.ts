@@ -1,3 +1,4 @@
+import { guardedWrite } from '../utils/storageHealth'
 import type { SyncRepository } from './types'
 
 // Exported so the privacy notice in index.html can be checked against the keys
@@ -13,9 +14,18 @@ export const localStorageSyncRepository: SyncRepository = {
     }
   },
   saveLastSyncedSnapshot(value: string): void {
-    localStorage.setItem(STORAGE_KEY, value)
+    // This snapshot is the largest thing the app writes — it's the full
+    // days/daysOff/settings payload — so it is the most likely of all these
+    // keys to be the one that trips a quota limit.
+    guardedWrite(() => localStorage.setItem(STORAGE_KEY, value))
   },
   clearLastSyncedSnapshot(): void {
-    localStorage.removeItem(STORAGE_KEY)
+    try {
+      localStorage.removeItem(STORAGE_KEY)
+    } catch {
+      // Nothing to do if storage is unavailable. Not routed through
+      // guardedWrite: failing to *remove* a key doesn't risk losing data the
+      // user entered, so it shouldn't raise the "not saved" warning.
+    }
   },
 }
