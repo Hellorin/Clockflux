@@ -25,6 +25,14 @@ interface ImportMetaEnv {
    * app running elsewhere.
    */
   readonly VITE_ACCOUNT_URL?: string
+  /**
+   * Base URL of clockflux-info-front — marketing/landing, docs, and the legal
+   * documents (Terms, refund policy, privacy notice), which used to live in
+   * this app's about/index.html. Read both by vite.config.js (via loadEnv, to
+   * substitute %VITE_INFO_URL% in index.html's privacy link) and by App.tsx
+   * (the header's "?" button).
+   */
+  readonly VITE_INFO_URL?: string
 }
 
 interface ImportMeta {

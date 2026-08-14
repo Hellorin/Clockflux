@@ -1,6 +1,7 @@
 {
   "redirects": [
-    { "source": "/about", "destination": "/about/", "permanent": true }
+    { "source": "/about", "destination": "https://info.clockflux.app/", "permanent": true },
+    { "source": "/about/(.*)", "destination": "https://info.clockflux.app/", "permanent": true }
   ],
   "headers": [
     {

@@ -11,26 +11,33 @@ const rootDir = fileURLToPath(new URL('.', import.meta.url))
 // account site is linked from static HTML *and* from Settings.
 const DEFAULT_ACCOUNT_URL = 'https://account.clockflux.app'
 
+// Same reasoning as DEFAULT_ACCOUNT_URL above, for the info site's privacy
+// notice link in the landing page's Privacy section.
+const DEFAULT_INFO_URL = 'https://info.clockflux.app'
+
 /**
- * Substitutes %VITE_ACCOUNT_URL% in the static HTML entries.
+ * Substitutes %VITE_ACCOUNT_URL% and %VITE_INFO_URL% in index.html.
  *
- * index.html and about/index.html link to the account site, but they're
- * plain markup — no module runs in about/index.html at all — so they can't
- * read import.meta.env the way App.tsx does. Hardcoding the production URL
- * there meant the link jumped to the live site from a dev server.
+ * index.html links to the account and info sites, but it's plain markup — no
+ * module runs in the #landing block at all — so it can't read
+ * import.meta.env the way App.tsx does. Hardcoding the production URLs there
+ * meant the links jumped to the live sites from a dev server.
  *
  * Vite's own %ENV% replacement would leave the placeholder in the output
  * verbatim when the variable is unset, shipping a broken href; this applies
  * the same fallback App.tsx uses instead.
  */
-function accountUrlInHtml(mode) {
-  const { VITE_ACCOUNT_URL } = loadEnv(mode, rootDir, 'VITE_')
-  const url = (VITE_ACCOUNT_URL || DEFAULT_ACCOUNT_URL).replace(/\/$/, '')
+function crossAppUrlsInHtml(mode) {
+  const { VITE_ACCOUNT_URL, VITE_INFO_URL } = loadEnv(mode, rootDir, 'VITE_')
+  const accountUrl = (VITE_ACCOUNT_URL || DEFAULT_ACCOUNT_URL).replace(/\/$/, '')
+  const infoUrl = (VITE_INFO_URL || DEFAULT_INFO_URL).replace(/\/$/, '')
 
   return {
-    name: 'clockflux-account-url-in-html',
+    name: 'clockflux-cross-app-urls-in-html',
     transformIndexHtml(html) {
-      return html.replaceAll('%VITE_ACCOUNT_URL%', url)
+      return html
+        .replaceAll('%VITE_ACCOUNT_URL%', accountUrl)
+        .replaceAll('%VITE_INFO_URL%', infoUrl)
     },
   }
 }
@@ -40,12 +47,11 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       input: {
         main: resolve(rootDir, 'index.html'),
-        about: resolve(rootDir, 'about/index.html'),
       },
     },
   },
   plugins: [
-    accountUrlInHtml(mode),
+    crossAppUrlsInHtml(mode),
     react(),
     VitePWA({
       registerType: 'autoUpdate',
@@ -76,7 +82,7 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         // Without this the service worker answers navigations to these paths
         // with the SPA shell instead of the real files.
-        navigateFallbackDenylist: [/^\/robots\.txt$/, /^\/sitemap\.xml$/, /^\/about\//]
+        navigateFallbackDenylist: [/^\/robots\.txt$/, /^\/sitemap\.xml$/]
       }
     })
   ],

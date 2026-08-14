@@ -36,6 +36,11 @@ const AUTH_ENABLED = import.meta.env.VITE_ENABLE_AUTH === 'true'
 const PAID_FEATURES_ENABLED = import.meta.env.VITE_ENABLE_PAID_FEATURES === 'true'
 // Where the Settings page's "Upgrade to Pro" link sends a Free user.
 const ACCOUNT_URL = import.meta.env.VITE_ACCOUNT_URL || 'https://account.clockflux.app'
+// Where the header's "?" button sends people. It used to reopen the in-app
+// landing splash instead; now that the fuller marketing/docs/legal content it
+// summarized lives on its own site, linking straight there beats reopening a
+// trimmed-down in-app copy.
+const INFO_URL = import.meta.env.VITE_INFO_URL || 'https://info.clockflux.app'
 
 interface SelectedDay {
   dateKey: string
@@ -47,8 +52,13 @@ export default function App() {
   const [selectedDay, setSelectedDay] = useState<SelectedDay | null>(null)
   const [hoursFormat, setHoursFormat] = useState<HoursFormat>(() => (preferencesService.loadHoursFormat() as HoursFormat) || 'decimal')
   const [celebrationMilestone, setCelebrationMilestone] = useState<Milestone | null>(null)
-  const aboutBtnRef = useRef<HTMLButtonElement>(null)
-  const { isLandingOpen, openLanding } = useLandingPage({ returnFocusRef: aboutBtnRef })
+  // Still an HTMLElement ref even though the "?" control below is now an <a>,
+  // not a <button>: useLandingPage falls back to focusing this when the
+  // splash auto-opens on a first visit (i.e. with no prior click to return
+  // focus to), which has nothing to do with the "?" control's own click
+  // handler below.
+  const aboutBtnRef = useRef<HTMLAnchorElement>(null)
+  const { isLandingOpen } = useLandingPage({ returnFocusRef: aboutBtnRef })
   const { user, features, accessToken, signIn, signOut, updateUser, previouslySignedIn } = useAuth()
   // Settings round-trip through the server-validated /api/v1/settings
   // endpoint whenever signed in (see useAppSettings), which is what actually
@@ -261,16 +271,17 @@ export default function App() {
           </p>
         )}
         <p className="app-date">{formatDateKey(todayKey)}</p>
-        <button
+        <a
           ref={aboutBtnRef}
-          type="button"
           className="app-about-btn"
-          onClick={openLanding}
+          href={INFO_URL}
+          target="_blank"
+          rel="noopener noreferrer"
           aria-label="About Clockflux"
           title="About Clockflux"
         >
           ?
-        </button>
+        </a>
         {AUTH_ENABLED && PAID_FEATURES_ENABLED && (
           <span
             className={`app-connection-dot ${connectionStatus.className}`}
