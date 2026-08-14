@@ -125,6 +125,30 @@ describe('checkIn while a session from a previous day is open', () => {
   })
 })
 
+describe('daily milestone respects a custom target', () => {
+  // The 8h threshold was hardcoded, so a Pro user on the "custom-daily-target"
+  // feature got no celebration when they actually hit their goal, and an
+  // unexpected one two hours later.
+  function dayWithOpenSessionSince(hour: number): TimeEntriesData {
+    return {
+      days: { '2024-01-10': [{ checkIn: new Date(2024, 0, 10, hour, 0).toISOString(), checkOut: null }] },
+      daysOff: {},
+    }
+  }
+
+  it('fires at 6h for a 6h target', () => {
+    vi.setSystemTime(new Date(2024, 0, 10, 15, 0)) // 6h after a 09:00 start
+    const { milestone } = checkOut(dayWithOpenSessionSince(9), 6)
+    expect(milestone).toBe('daily')
+  })
+
+  it('does not fire at 6h for the default 8h target', () => {
+    vi.setSystemTime(new Date(2024, 0, 10, 15, 0))
+    const { milestone } = checkOut(dayWithOpenSessionSince(9), 8)
+    expect(milestone).toBeNull()
+  })
+})
+
 describe('closeStaleSessions', () => {
   it('never records a zero-length session for a check-in after the cutoff hour', () => {
     // 22:00 is past the 21:00 auto-checkout cutoff, so max(checkIn, cutoff)

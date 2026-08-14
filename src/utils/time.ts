@@ -124,7 +124,16 @@ export interface WeekProgress {
  * and the daysOff map, returns weekly progress metrics.
  * Mirrors the logic in CalendarView week summary.
  */
-export function computeWeekProgress(weekDays: Date[], days: DaysMap, daysOff: DaysOffMap): WeekProgress {
+export function computeWeekProgress(
+  weekDays: Date[],
+  days: DaysMap,
+  daysOff: DaysOffMap,
+  // Defaulted rather than required so existing callers keep working, but every
+  // caller inside the app now passes the user's real target: this used to
+  // hardcode 8, so a Pro user on the "custom-daily-target" feature was scored
+  // against 40h weeks no matter what they had configured.
+  dailyTargetHours: number = 8,
+): WeekProgress {
   const today = getTodayKey()
 
   const weekTotal = weekDays.reduce((sum, date) => {
@@ -136,7 +145,7 @@ export function computeWeekProgress(weekDays: Date[], days: DaysMap, daysOff: Da
 
   const weekdays = weekDays.slice(0, 5) // Mon–Fri
   const daysOffSum = weekdays.reduce((sum, d) => sum + dayOffFraction(daysOff[toKey(d)]), 0)
-  const weekTarget = (5 - daysOffSum) * 8
+  const weekTarget = (5 - daysOffSum) * dailyTargetHours
 
   const isCurrentWeek = weekDays.some(d => toKey(d) === today)
   let effectiveTarget = weekTarget
@@ -146,7 +155,7 @@ export function computeWeekProgress(weekDays: Date[], days: DaysMap, daysOff: Da
       if (isWeekend(key) || key > today) return sum
       return sum + (1 - dayOffFraction(daysOff[key]))
     }, 0)
-    effectiveTarget = daysElapsed * 8
+    effectiveTarget = daysElapsed * dailyTargetHours
   }
 
   return { weekTotal, weekTarget, effectiveTarget, isCurrentWeek }

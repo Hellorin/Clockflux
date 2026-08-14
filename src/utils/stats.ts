@@ -3,7 +3,16 @@ import { dayOffFraction } from './dayOff'
 import type { DaysMap, DaysOffMap, Session } from '../types'
 
 const MS_PER_HOUR = 3600000
-const DAY_TARGET_HOURS = 8
+/**
+ * Fallback expected work hours per day, used when no caller supplies one.
+ *
+ * Every function below that scores hours against a target now takes an explicit
+ * dailyTargetHours instead of closing over this constant. A Pro user on the
+ * "custom-daily-target" feature could previously set 6h, watch the Track tab
+ * honour it, and then see the Health page still grade their weeks against 40h —
+ * two screens disagreeing about the same number.
+ */
+export const DEFAULT_DAY_TARGET_HOURS = 8
 
 interface PerDay {
   key: string
@@ -59,7 +68,7 @@ function isDayOff(dateKey: string, daysOff: DaysOffMap): boolean {
  * Entry point: returns a single object with every stat the page needs.
  * All heavy work lives here so it can be memoized by the caller.
  */
-export function computeGlobalStats(days: DaysMap, daysOff: DaysOffMap): GlobalStats {
+export function computeGlobalStats(days: DaysMap, daysOff: DaysOffMap, dailyTargetHours: number = DEFAULT_DAY_TARGET_HOURS): GlobalStats {
   const entries = Object.entries(days)
     .filter(([, sessions]) => sessions && sessions.length > 0)
     .sort(([a], [b]) => a.localeCompare(b))
@@ -88,7 +97,7 @@ export function computeGlobalStats(days: DaysMap, daysOff: DaysOffMap): GlobalSt
     }))
 
   const totals = computeTotals(perDay)
-  const streaks = computeStreaks(perDay, daysOff)
+  const streaks = computeStreaks(perDay, daysOff, dailyTargetHours)
   const averages = computeAverages(perDay)
   const charts = computeCharts(perDay)
 
@@ -109,7 +118,7 @@ function computeAverages(perDay: PerDay[]) {
   return { avgHoursPerWorkday }
 }
 
-function computeStreaks(perDay: PerDay[], daysOff: DaysOffMap) {
+function computeStreaks(perDay: PerDay[], daysOff: DaysOffMap, dailyTargetHours: number = DEFAULT_DAY_TARGET_HOURS) {
   const loggedKeys = new Set(perDay.map(d => d.key))
 
   // Current streak: walk backwards from today through prior workdays.
@@ -139,7 +148,7 @@ function computeStreaks(perDay: PerDay[], daysOff: DaysOffMap) {
 
   // Weeks hit target: count completed weeks whose weekday total met the (prorated-for-daysOff) 40h goal.
   const currentMonday = mondayOf(new Date())
-  const weekTotals = buildWeeklyTotals(perDay, daysOff)
+  const weekTotals = buildWeeklyTotals(perDay, daysOff, dailyTargetHours)
   const completedWeeks = weekTotals.filter(w => w.mondayDate.getTime() < currentMonday.getTime())
   const weeksHit = completedWeeks.filter(w => w.target > 0 && w.hours >= w.target).length
   const weeksHitPct = completedWeeks.length > 0
@@ -226,7 +235,7 @@ export interface WeeklyTotal {
   target: number
 }
 
-export function buildWeeklyTotals(perDay: Pick<PerDay, 'key' | 'totalMs'>[], daysOff: DaysOffMap): WeeklyTotal[] {
+export function buildWeeklyTotals(perDay: Pick<PerDay, 'key' | 'totalMs'>[], daysOff: DaysOffMap, dailyTargetHours: number = DEFAULT_DAY_TARGET_HOURS): WeeklyTotal[] {
   if (perDay.length === 0) return []
 
   const keys = perDay.map(d => d.key).sort((a, b) => a.localeCompare(b))
@@ -248,7 +257,7 @@ export function buildWeeklyTotals(perDay: Pick<PerDay, 'key' | 'totalMs'>[], day
       mondayDate: new Date(m),
       mondayKey: toKey(m),
       hours: toDecimalHours(ms),
-      target: (5 - offSum) * DAY_TARGET_HOURS,
+      target: (5 - offSum) * dailyTargetHours,
     })
   }
   return weeks
@@ -282,7 +291,7 @@ export interface RecentWeeklyAvg {
  * Uses the last `weeksBack` completed weeks for the average; falls back to
  * all-time daily average × 5 when not enough history exists.
  */
-export function computeRecentWeeklyAvg(days: DaysMap, daysOff: DaysOffMap, weeksBack: number = 4): RecentWeeklyAvg {
+export function computeRecentWeeklyAvg(days: DaysMap, daysOff: DaysOffMap, weeksBack: number = 4, dailyTargetHours: number = DEFAULT_DAY_TARGET_HOURS): RecentWeeklyAvg {
   const now = Date.now()
   const entries = Object.entries(days)
     .filter(([, sessions]) => sessions && sessions.length > 0)
@@ -297,12 +306,12 @@ export function computeRecentWeeklyAvg(days: DaysMap, daysOff: DaysOffMap, weeks
 
   const today = new Date()
   const currentMonday = mondayOf(today)
-  const allWeeks = buildWeeklyTotals(perDay, daysOff)
+  const allWeeks = buildWeeklyTotals(perDay, daysOff, dailyTargetHours)
 
   // Current week
   const currentWeekData = allWeeks.find(w => w.mondayKey === toKey(currentMonday))
   const currentWeekHours = currentWeekData?.hours ?? 0
-  const currentWeekTarget = currentWeekData?.target ?? DAY_TARGET_HOURS * 5
+  const currentWeekTarget = currentWeekData?.target ?? dailyTargetHours * 5
 
   // On weekends the work week is done — include the current week in completed set.
   const dow = today.getDay()
@@ -335,7 +344,7 @@ export function computeRecentWeeklyAvg(days: DaysMap, daysOff: DaysOffMap, weeks
     const totalMs = perDay.reduce((sum, d) => sum + d.totalMs, 0)
     const avgDay = perDay.length > 0 ? toDecimalHours(totalMs / perDay.length) : 0
     recentAvgHours = avgDay * 5
-    recentAvgTarget = DAY_TARGET_HOURS * 5
+    recentAvgTarget = dailyTargetHours * 5
     weekCount = 0
   }
 

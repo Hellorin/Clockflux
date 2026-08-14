@@ -113,7 +113,14 @@ export interface CheckOutResult {
 // under getTodayKey(), so after midnight it found nothing, returned `prev`
 // unchanged, and React's Object.is bail-out meant tapping "check out" did
 // nothing whatsoever: no error, no state change, no visible feedback.
-export function checkOut(prev: TimeEntriesData): CheckOutResult {
+export function checkOut(
+  prev: TimeEntriesData,
+  // The daily milestone used to be hardcoded at 8h, so a Pro user on the
+  // "custom-daily-target" feature with a 6h day got no celebration at 6h and an
+  // unexpected one at 8h — while the Track tab's progress bar, which does read
+  // their setting, had shown them complete two hours earlier.
+  dailyTargetHours: number = 8,
+): CheckOutResult {
   const open = findOpenSession(prev.days)
   if (!open) return { data: prev, milestone: null }
 
@@ -128,7 +135,7 @@ export function checkOut(prev: TimeEntriesData): CheckOutResult {
   const dailyBefore = toDecimalHours(sumSessionsMs(closedSessions))
   const weekDays = getWeekDays()
   const beforeDays = { ...prev.days, [key]: closedSessions }
-  const { weekTotal: weekBefore, weekTarget } = computeWeekProgress(weekDays, beforeDays, prev.daysOff)
+  const { weekTotal: weekBefore, weekTarget } = computeWeekProgress(weekDays, beforeDays, prev.daysOff, dailyTargetHours)
 
   // Apply mutation
   sessions[lastIdx] = { ...sessions[lastIdx], checkOut: new Date(now).toISOString() }
@@ -137,9 +144,9 @@ export function checkOut(prev: TimeEntriesData): CheckOutResult {
 
   // AFTER: all sessions closed including the one just closed
   const dailyAfter = toDecimalHours(sumSessionsMs(sessions))
-  const { weekTotal: weekAfter } = computeWeekProgress(weekDays, next.days, next.daysOff)
+  const { weekTotal: weekAfter } = computeWeekProgress(weekDays, next.days, next.daysOff, dailyTargetHours)
 
-  const crossedDaily = dailyBefore < 8 && dailyAfter >= 8
+  const crossedDaily = dailyBefore < dailyTargetHours && dailyAfter >= dailyTargetHours
   const crossedWeekly = weekTarget > 0 && weekBefore < weekTarget && weekAfter >= weekTarget
   let milestone: Milestone | null = null
   if (crossedWeekly) milestone = 'weekly'

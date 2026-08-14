@@ -105,6 +105,14 @@ describe('computeWeekProgress', () => {
     expect(result.weekTotal).toBe(8)
     expect(result.weekTarget).toBe(32) // (5 - 1) * 8
   })
+
+  it("uses the caller's daily target rather than a hardcoded 8h", () => {
+    // Both the weekly target and the elapsed-days effective target were fixed
+    // at 8, so the Pro "custom-daily-target" setting had no effect here.
+    const weekDays = getWeekDays(new Date('2024-01-10T12:00:00'))
+    const result = computeWeekProgress(weekDays, {}, {}, 6)
+    expect(result.weekTarget).toBe(30) // 5 * 6
+  })
 })
 
 describe('getTodayKey', () => {

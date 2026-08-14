@@ -68,8 +68,19 @@ export function useTimeTracker(dailyTargetHours: number = 8, unlimitedHistory: b
   const isCheckedIn = timeTrackingService.findOpenSession(data.days) !== null
 
   const currentYear = todayKey.slice(0, 4)
-  const historyDays = unlimitedHistory ? data.days : filterToYear(data.days, currentYear)
-  const historyDaysOff = unlimitedHistory ? data.daysOff : filterToYear(data.daysOff, currentYear)
+  // Memoized because filterToYear returns a fresh object every call, so the
+  // stats useMemo below — which depends on these — could never hit on the free
+  // plan. And the free plan is the default: every re-render of App recomputed
+  // the full 52-week heatmap, the 12 monthly buckets and the day-by-day streak
+  // walk from scratch.
+  const historyDays = useMemo(
+    () => (unlimitedHistory ? data.days : filterToYear(data.days, currentYear)),
+    [unlimitedHistory, data.days, currentYear]
+  )
+  const historyDaysOff = useMemo(
+    () => (unlimitedHistory ? data.daysOff : filterToYear(data.daysOff, currentYear)),
+    [unlimitedHistory, data.daysOff, currentYear]
+  )
 
   const checkIn = useCallback(() => {
     setData(prev => timeTrackingService.checkIn(prev))
@@ -77,11 +88,11 @@ export function useTimeTracker(dailyTargetHours: number = 8, unlimitedHistory: b
 
   const checkOut = useCallback(() => {
     setData(prev => {
-      const { data: next, milestone } = timeTrackingService.checkOut(prev)
+      const { data: next, milestone } = timeTrackingService.checkOut(prev, dailyTargetHours)
       if (milestone) milestoneCallbackRef.current?.(milestone)
       return next
     })
-  }, [])
+  }, [dailyTargetHours])
 
   // Build sorted history (newest first), excluding today if today has no sessions
   const allDays: DayEntry[] = Object.entries(historyDays)
@@ -118,7 +129,10 @@ export function useTimeTracker(dailyTargetHours: number = 8, unlimitedHistory: b
   const isTodayOff = todayWorkFraction === 0
   const todayTargetMs = todayWorkFraction * dailyTargetHours * 3600000
 
-  const stats: GlobalStats = useMemo(() => statsService.getGlobalStats(historyDays, historyDaysOff), [historyDays, historyDaysOff])
+  const stats: GlobalStats = useMemo(
+    () => statsService.getGlobalStats(historyDays, historyDaysOff, dailyTargetHours),
+    [historyDays, historyDaysOff, dailyTargetHours]
+  )
 
   const personalDaysUsedThisYear = useMemo(() => ptoService.getPersonalDaysUsedThisYear(data.daysOff), [data.daysOff])
 

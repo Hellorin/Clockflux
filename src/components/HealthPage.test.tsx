@@ -26,12 +26,12 @@ describe('HealthPage', () => {
   })
 
   it('shows the empty state when stats are empty', () => {
-    render(<HealthPage stats={{ isEmpty: true } as GlobalStats} allDays={[]} daysOff={{}} employmentStartDate={null} />)
+    render(<HealthPage stats={{ isEmpty: true } as GlobalStats} allDays={[]} daysOff={{}} employmentStartDate={null} dailyTargetHours={8} />)
     expect(screen.getByText('No data yet')).toBeInTheDocument()
   })
 
   it('shows the empty state when stats is null', () => {
-    render(<HealthPage stats={null} allDays={[]} daysOff={{}} employmentStartDate={null} />)
+    render(<HealthPage stats={null} allDays={[]} daysOff={{}} employmentStartDate={null} dailyTargetHours={8} />)
     expect(screen.getByText('No data yet')).toBeInTheDocument()
   })
 
@@ -42,7 +42,7 @@ describe('HealthPage', () => {
     const daysOff = {}
     const allDays = Object.entries(days).map(([date, sessions]) => ({ date, sessions })) as DayEntry[]
     const stats = computeGlobalStats(days, daysOff)
-    render(<HealthPage stats={stats} allDays={allDays} daysOff={daysOff} employmentStartDate="2024-01-01" />)
+    render(<HealthPage stats={stats} allDays={allDays} daysOff={daysOff} employmentStartDate="2024-01-01" dailyTargetHours={8} />)
     expect(screen.getByText('Great, keep up the good work')).toBeInTheDocument()
     expect(screen.getByText('Daily average')).toBeInTheDocument()
     expect(screen.getByText('Cumulative overtime')).toBeInTheDocument()
@@ -55,7 +55,7 @@ describe('HealthPage', () => {
     const days = makeDays()
     const allDays = Object.entries(days).map(([date, sessions]) => ({ date, sessions })) as DayEntry[]
     const stats = computeGlobalStats(days, {})
-    render(<HealthPage stats={stats} allDays={allDays} daysOff={{}} employmentStartDate={null} />)
+    render(<HealthPage stats={stats} allDays={allDays} daysOff={{}} employmentStartDate={null} dailyTargetHours={8} />)
     fireEvent.click(screen.getByLabelText('What do these thresholds mean?'))
     expect(screen.getByText('What the thresholds mean')).toBeInTheDocument()
     fireEvent.click(screen.getByLabelText('Close'))
@@ -76,7 +76,7 @@ describe('HealthPage', () => {
     }
     const allDays = Object.entries(days).map(([date, sessions]) => ({ date, sessions })) as DayEntry[]
     const stats = computeGlobalStats(days, {})
-    render(<HealthPage stats={stats} allDays={allDays} daysOff={{}} employmentStartDate={null} />)
+    render(<HealthPage stats={stats} allDays={allDays} daysOff={{}} employmentStartDate={null} dailyTargetHours={8} />)
     expect(screen.getByText('Take it easy, this is about your health')).toBeInTheDocument()
   })
 
@@ -86,7 +86,7 @@ describe('HealthPage', () => {
     const days = { '2024-01-01': [{ checkIn: '2024-01-01T09:00:00.000', checkOut: '2024-01-01T17:00:00.000' }] }
     const allDays = Object.entries(days).map(([date, sessions]) => ({ date, sessions })) as DayEntry[]
     const stats = computeGlobalStats(days, {})
-    render(<HealthPage stats={stats} allDays={allDays} daysOff={{}} employmentStartDate={null} />)
+    render(<HealthPage stats={stats} allDays={allDays} daysOff={{}} employmentStartDate={null} dailyTargetHours={8} />)
     expect(screen.getByText('Keep tracking — your health score will appear after your first full week')).toBeInTheDocument()
     expect(screen.getByText('Based on your overall daily average')).toBeInTheDocument()
   })

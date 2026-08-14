@@ -354,6 +354,7 @@ export default function App() {
             allDays={allDays}
             daysOff={daysOff}
             employmentStartDate={settings.employmentStartDate}
+            dailyTargetHours={settings.dailyTargetHours}
             historyScope={historyScope}
           />
         )}
