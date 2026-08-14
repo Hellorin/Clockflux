@@ -26,10 +26,81 @@ function isoToHHMM(iso: string): string {
   return `${h}:${m}`
 }
 
-function hhmmToISO(dateKey: string, hhmm: string): string {
+// dayOffset exists so a session can end on the day *after* the one being
+// edited. Without it both ends were pinned to dateKey, which made an overnight
+// shift (23:00 → 01:00) structurally impossible to record: it came out as a
+// negative span, sumSessionsMs clamped it with Math.max(0, …), and the day
+// silently displayed 0h.
+function hhmmToDate(dateKey: string, hhmm: string, dayOffset = 0): Date {
   const [y, mo, d] = dateKey.split('-').map(Number)
   const [h, min] = hhmm.split(':').map(Number)
-  return new Date(y, mo - 1, d, h, min).toISOString()
+  return new Date(y, mo - 1, d + dayOffset, h, min)
+}
+
+/** A row resolved to real timestamps, with overnight roll-over applied. */
+interface ParsedRow {
+  id: number
+  startMs: number
+  /** null for a session that is still open (no check-out entered). */
+  endMs: number | null
+  /** True when the check-out was earlier in the clock than the check-in. */
+  rollsOver: boolean
+}
+
+function parseRow(dateKey: string, row: Row): ParsedRow | null {
+  if (!row.checkIn) return null
+  const start = hhmmToDate(dateKey, row.checkIn)
+  if (!row.checkOut) return { id: row.id, startMs: start.getTime(), endMs: null, rollsOver: false }
+
+  const sameDayEnd = hhmmToDate(dateKey, row.checkOut)
+  // An end earlier than the start is read as "the next morning" rather than
+  // rejected, so night shifts are expressible. The row shows a "+1d" marker and
+  // the resulting duration, so a genuine typo is visible rather than silent.
+  const rollsOver = sameDayEnd.getTime() <= start.getTime()
+  const end = rollsOver ? hhmmToDate(dateKey, row.checkOut, 1) : sameDayEnd
+  return { id: row.id, startMs: start.getTime(), endMs: end.getTime(), rollsOver }
+}
+
+/**
+ * Returns a human-readable problem with the set of rows, or null if they're
+ * fine. Previously handleSave did no validation at all, so overlapping sessions
+ * were accepted and double-counted, and a check-out with no check-in was
+ * silently dropped on save with the user believing it had been recorded.
+ */
+function validateRows(dateKey: string, rows: Row[]): string | null {
+  if (rows.some(r => !r.checkIn && r.checkOut)) {
+    return 'Every session needs a check-in time.'
+  }
+
+  const parsed = rows
+    .map(r => parseRow(dateKey, r))
+    .filter((r): r is ParsedRow => r !== null)
+    .sort((a, b) => a.startMs - b.startMs)
+
+  const openCount = parsed.filter(r => r.endMs === null).length
+  if (openCount > 1) {
+    return 'Only one session can be left running.'
+  }
+  if (openCount === 1 && parsed[parsed.length - 1].endMs !== null) {
+    return 'A session left running must be the last one of the day.'
+  }
+
+  for (let i = 1; i < parsed.length; i++) {
+    const prev = parsed[i - 1]
+    // An open session has no end, so anything starting after it overlaps it.
+    if (prev.endMs === null || parsed[i].startMs < prev.endMs) {
+      return 'Sessions overlap — each one has to start after the previous ends.'
+    }
+  }
+
+  return null
+}
+
+function formatDuration(ms: number): string {
+  const totalMinutes = Math.round(ms / 60000)
+  const h = Math.floor(totalMinutes / 60)
+  const m = totalMinutes % 60
+  return m === 0 ? `${h}h` : `${h}h ${m}m`
 }
 
 function currentHHMM(): string {
@@ -101,13 +172,19 @@ export default function DayEditModal({ dateKey, sessions, onSave, onClose, dayOf
     setRows(prev => [...prev, { id: nextRowId(prev), checkIn: currentHHMM(), checkOut: '' }])
   }
 
+  const validationError = validateRows(dateKey, rows)
+
   function handleSave() {
+    if (validationError) return
     const newSessions = rows
       .filter(r => r.checkIn !== '')
-      .map(r => ({
-        checkIn: hhmmToISO(dateKey, r.checkIn),
-        checkOut: r.checkOut ? hhmmToISO(dateKey, r.checkOut) : null
-      }))
+      .map(r => {
+        const parsed = parseRow(dateKey, r)!
+        return {
+          checkIn: new Date(parsed.startMs).toISOString(),
+          checkOut: parsed.endMs === null ? null : new Date(parsed.endMs).toISOString(),
+        }
+      })
     onSave(dateKey, newSessions)
   }
 
@@ -159,31 +236,52 @@ export default function DayEditModal({ dateKey, sessions, onSave, onClose, dayOf
           {rows.length === 0 && (
             <p className="modal-empty">No sessions. Add one below.</p>
           )}
-          {rows.map(row => (
-            <div key={row.id} className="modal-session-row">
-              <input
-                type="time"
-                value={row.checkIn}
-                onChange={e => updateRow(row.id, 'checkIn', e.target.value)}
-                aria-label="Check-in time"
-              />
-              <span className="modal-sep">→</span>
-              <input
-                type="time"
-                value={row.checkOut}
-                onChange={e => updateRow(row.id, 'checkOut', e.target.value)}
-                aria-label="Check-out time"
-                placeholder="open"
-              />
-              <button type="button" className="modal-delete-btn" onClick={() => deleteRow(row.id)} aria-label="Delete session">×</button>
-            </div>
-          ))}
+          {rows.map(row => {
+            const parsed = parseRow(dateKey, row)
+            return (
+              <div key={row.id} className="modal-session-row">
+                <input
+                  type="time"
+                  value={row.checkIn}
+                  onChange={e => updateRow(row.id, 'checkIn', e.target.value)}
+                  aria-label="Check-in time"
+                />
+                <span className="modal-sep">→</span>
+                <input
+                  type="time"
+                  value={row.checkOut}
+                  onChange={e => updateRow(row.id, 'checkOut', e.target.value)}
+                  aria-label="Check-out time"
+                  placeholder="open"
+                />
+                {/* The computed span, so an inverted or mistyped time is
+                    visible immediately rather than showing up later as a day
+                    that mysteriously totals 0h. */}
+                {parsed?.endMs != null && (
+                  <span className="modal-session-duration">
+                    {parsed.rollsOver && <span className="modal-session-nextday" title="Ends the next day">+1d</span>}
+                    {formatDuration(parsed.endMs - parsed.startMs)}
+                  </span>
+                )}
+                <button type="button" className="modal-delete-btn" onClick={() => deleteRow(row.id)} aria-label="Delete session">×</button>
+              </div>
+            )
+          })}
         </div>
 
         <button type="button" className="modal-add-btn" onClick={addSession} disabled={isFullDayOff}>+ Add Session</button>
 
+        {validationError && <p className="modal-validation-error" role="alert">{validationError}</p>}
+
         <div className="modal-actions">
-          <button type="button" className="modal-save-btn" onClick={handleSave}>Save</button>
+          <button
+            type="button"
+            className="modal-save-btn"
+            onClick={handleSave}
+            disabled={validationError !== null}
+          >
+            Save
+          </button>
         </div>
       </div>
     </div>
