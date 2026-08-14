@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { getTodayKey, sumSessionsMs, toDecimalHours, isWeekend, getWeekDays } from '../utils/time'
 import { dayOffFraction } from '../utils/dayOff'
 import * as timeTrackingService from '../services/timeTrackingService'
@@ -42,9 +42,30 @@ export function useTimeTracker(dailyTargetHours: number = 8, unlimitedHistory: b
   const [data, setData] = useState(timeTrackingService.loadTimeTrackingData)
   const milestoneCallbackRef = useRef<((milestone: Milestone) => void) | null>(null)
 
-  const todayKey = getTodayKey()
+  // `dayEpoch` exists only to force a re-render when the local date rolls over.
+  // Everything below derives from getTodayKey(), which was previously computed
+  // during render and then never recomputed, because nothing re-renders this
+  // hook at midnight — LiveTimer, TodaySummary and HistoryList each keep their
+  // own tick in local state. So a session left running across midnight kept
+  // being measured against the previous day right up until the next reload.
+  const [dayEpoch, setDayEpoch] = useState(0)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- dayEpoch is deliberately an invalidation key rather than a value read inside: getTodayKey() reads the clock, which the dependency array cannot express, so bumping dayEpoch at midnight is what recomputes it
+  const todayKey = useMemo(() => getTodayKey(), [dayEpoch])
+
+  useEffect(() => {
+    const now = new Date()
+    const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1, 0)
+    // +1s of slack so the timer cannot fire a hair early and read the old date.
+    const id = setTimeout(() => setDayEpoch(e => e + 1), nextMidnight.getTime() - now.getTime())
+    return () => clearTimeout(id)
+  }, [dayEpoch])
+
   const todaySessions = data.days[todayKey] || []
-  const isCheckedIn = todaySessions.length > 0 && todaySessions[todaySessions.length - 1].checkOut === null
+  // Derived from the open session wherever it lives, not from today's key: a
+  // shift started at 22:00 is still running at 00:30, and keying this off
+  // today's (now empty) entry made the app show "checked out" while the timer
+  // was in fact still going.
+  const isCheckedIn = timeTrackingService.findOpenSession(data.days) !== null
 
   const currentYear = todayKey.slice(0, 4)
   const historyDays = unlimitedHistory ? data.days : filterToYear(data.days, currentYear)
