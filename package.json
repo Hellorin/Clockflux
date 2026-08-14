@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "check:csp": "node scripts/check-csp.mjs",
+    "prebuild": "npm run check:csp",
     "build": "vite build",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
