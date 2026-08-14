@@ -35,7 +35,7 @@ const AUTH_ENABLED = import.meta.env.VITE_ENABLE_AUTH === 'true'
 // login is gated on below — signing in only exists to unlock paid features.
 const PAID_FEATURES_ENABLED = import.meta.env.VITE_ENABLE_PAID_FEATURES === 'true'
 // Where the Settings page's "Upgrade to Pro" link sends a Free user.
-const SUBSCRIPTION_URL = import.meta.env.VITE_SUBSCRIPTION_URL || 'https://subscription.clockflux.app'
+const ACCOUNT_URL = import.meta.env.VITE_ACCOUNT_URL || 'https://account.clockflux.app'
 
 interface SelectedDay {
   dateKey: string
@@ -371,7 +371,7 @@ export default function App() {
             isDeletingAccount={isDeletingAccount}
             deleteAccountError={deleteAccountError}
             showUpgrade={showUpgrade}
-            subscriptionUrl={SUBSCRIPTION_URL}
+            accountUrl={ACCOUNT_URL}
           />
         )}
       </main>

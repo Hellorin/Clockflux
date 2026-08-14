@@ -68,11 +68,11 @@ interface SettingsPageProps {
   deleteAccountError?: string | null
   /** Pro feature showcase: shown to signed-out/Free callers once paid gating is live, to explain what they're missing. */
   showUpgrade?: boolean
-  /** Where the "Upgrade to Pro" link sends the user (clockflux-subscription-front). */
-  subscriptionUrl?: string
+  /** Where the "Upgrade to Pro" link sends the user (clockflux-account-front). */
+  accountUrl?: string
 }
 
-export default function SettingsPage({ allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange, showSync = false, lastSyncedAt = null, isSyncing = false, syncError = null, onSyncNow, showThemes = false, themeLightColor = null, themeDarkColor = null, onThemeLightColorChange, onThemeDarkColorChange, onPreviewTheme, onPreviewThemeEnd, showDailyTarget = false, dailyTargetHours = 8, onDailyTargetHoursChange, showHolidayCarryover = false, holidayCarryoverEnabled = false, onHolidayCarryoverEnabledChange, showBilling = false, cancelAtPeriodEnd = false, currentPeriodEnd = null, subscriptionInterval = null, isCancellingSubscription = false, onCancelSubscription, showAccount = false, user = null, onSignIn, onSignOut, onDeleteAccount, isDeletingAccount = false, deleteAccountError = null, showUpgrade = false, subscriptionUrl }: SettingsPageProps) {
+export default function SettingsPage({ allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange, showSync = false, lastSyncedAt = null, isSyncing = false, syncError = null, onSyncNow, showThemes = false, themeLightColor = null, themeDarkColor = null, onThemeLightColorChange, onThemeDarkColorChange, onPreviewTheme, onPreviewThemeEnd, showDailyTarget = false, dailyTargetHours = 8, onDailyTargetHoursChange, showHolidayCarryover = false, holidayCarryoverEnabled = false, onHolidayCarryoverEnabledChange, showBilling = false, cancelAtPeriodEnd = false, currentPeriodEnd = null, subscriptionInterval = null, isCancellingSubscription = false, onCancelSubscription, showAccount = false, user = null, onSignIn, onSignOut, onDeleteAccount, isDeletingAccount = false, deleteAccountError = null, showUpgrade = false, accountUrl }: SettingsPageProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const year = useMemo(() => new Date().getFullYear(), [])
@@ -225,7 +225,7 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
           </ul>
           <a
             className="settings-upgrade-cta"
-            href={subscriptionUrl}
+            href={accountUrl}
             target="_blank"
             rel="noopener noreferrer"
           >

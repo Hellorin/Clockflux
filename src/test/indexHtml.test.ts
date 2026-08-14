@@ -127,20 +127,20 @@ describe('index.html', () => {
     expect(html).toMatch(/holiday/i)
   })
 
-  it('links to the subscription site through the env placeholder, not a hardcoded host', () => {
-    // A literal https://subscription.clockflux.app here would jump straight to
+  it('links to the account site through the env placeholder, not a hardcoded host', () => {
+    // A literal https://account.clockflux.app here would jump straight to
     // production from a dev server. vite.config.js substitutes this at build
-    // and dev-serve time; see subscriptionUrlInHtml there.
-    expect(html).toContain('href="%VITE_SUBSCRIPTION_URL%/"')
-    expect(html).not.toContain('href="https://subscription.clockflux.app')
+    // and dev-serve time; see accountUrlInHtml there.
+    expect(html).toContain('href="%VITE_ACCOUNT_URL%/"')
+    expect(html).not.toContain('href="https://account.clockflux.app')
   })
 
-  it('uses the same subscription-site fallback in the HTML and in App.tsx', () => {
-    // Two independent code paths link to the subscription site — the static
+  it('uses the same account-site fallback in the HTML and in App.tsx', () => {
+    // Two independent code paths link to the account site — the static
     // markup (via vite.config.js) and Settings (via App.tsx) — so they need
-    // the same default when VITE_SUBSCRIPTION_URL is unset.
+    // the same default when VITE_ACCOUNT_URL is unset.
     const fallbackIn = (source: string) =>
-      /['"](https:\/\/subscription\.clockflux\.app)['"]/.exec(source)?.[1]
+      /['"](https:\/\/account\.clockflux\.app)['"]/.exec(source)?.[1]
 
     expect(fallbackIn(viteConfig)).toBeTruthy()
     expect(fallbackIn(appTsx)).toBe(fallbackIn(viteConfig))

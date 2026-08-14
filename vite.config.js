@@ -6,15 +6,15 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url))
 
-// Kept in step with src/App.tsx's SUBSCRIPTION_URL by a test — see
+// Kept in step with src/App.tsx's ACCOUNT_URL by a test — see
 // src/test/indexHtml.test.ts. Both need the same default because the
-// subscription site is linked from static HTML *and* from Settings.
-const DEFAULT_SUBSCRIPTION_URL = 'https://subscription.clockflux.app'
+// account site is linked from static HTML *and* from Settings.
+const DEFAULT_ACCOUNT_URL = 'https://account.clockflux.app'
 
 /**
- * Substitutes %VITE_SUBSCRIPTION_URL% in the static HTML entries.
+ * Substitutes %VITE_ACCOUNT_URL% in the static HTML entries.
  *
- * index.html and about/index.html link to the subscription site, but they're
+ * index.html and about/index.html link to the account site, but they're
  * plain markup — no module runs in about/index.html at all — so they can't
  * read import.meta.env the way App.tsx does. Hardcoding the production URL
  * there meant the link jumped to the live site from a dev server.
@@ -23,14 +23,14 @@ const DEFAULT_SUBSCRIPTION_URL = 'https://subscription.clockflux.app'
  * verbatim when the variable is unset, shipping a broken href; this applies
  * the same fallback App.tsx uses instead.
  */
-function subscriptionUrlInHtml(mode) {
-  const { VITE_SUBSCRIPTION_URL } = loadEnv(mode, rootDir, 'VITE_')
-  const url = (VITE_SUBSCRIPTION_URL || DEFAULT_SUBSCRIPTION_URL).replace(/\/$/, '')
+function accountUrlInHtml(mode) {
+  const { VITE_ACCOUNT_URL } = loadEnv(mode, rootDir, 'VITE_')
+  const url = (VITE_ACCOUNT_URL || DEFAULT_ACCOUNT_URL).replace(/\/$/, '')
 
   return {
-    name: 'clockflux-subscription-url-in-html',
+    name: 'clockflux-account-url-in-html',
     transformIndexHtml(html) {
-      return html.replaceAll('%VITE_SUBSCRIPTION_URL%', url)
+      return html.replaceAll('%VITE_ACCOUNT_URL%', url)
     },
   }
 }
@@ -45,7 +45,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   plugins: [
-    subscriptionUrlInHtml(mode),
+    accountUrlInHtml(mode),
     react(),
     VitePWA({
       registerType: 'autoUpdate',
