@@ -20,6 +20,16 @@ export interface VisitRepository {
   markVisited(): void
 }
 
+// Tracks whether this browser has installed Clockflux as a PWA (or dismissed
+// the offer), so useInstallPrompt knows whether to show the install banner
+// again on a later visit. See services/installService.ts.
+export interface InstallRepository {
+  hasInstalled(): boolean
+  markInstalled(): void
+  wasDismissed(): boolean
+  markDismissed(): void
+}
+
 export interface AuthRepository {
   loadUser(): AuthUser | null
   saveUser(user: AuthUser): void

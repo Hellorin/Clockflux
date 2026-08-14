@@ -12,6 +12,7 @@ import HistoryList from './components/HistoryList'
 import CalendarView from './components/CalendarView'
 import DayEditModal from './components/DayEditModal'
 import CelebrationOverlay from './components/CelebrationOverlay'
+import InstallPrompt from './components/InstallPrompt'
 import HealthPage from './components/HealthPage'
 import HolidayPage from './components/HolidayPage'
 import SettingsPage from './components/SettingsPage'
@@ -400,6 +401,8 @@ export default function App() {
           <span className="tab-label">Settings</span>
         </button>
       </nav>
+
+      <InstallPrompt />
     </div>
     <Analytics />
     </>
