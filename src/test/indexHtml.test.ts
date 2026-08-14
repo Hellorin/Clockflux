@@ -1,20 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createHash } from 'node:crypto'
 import { VISIT_STORAGE_KEY } from '../repositories/localStorageVisitRepository'
-import { STORAGE_KEY as TIME_ENTRIES_STORAGE_KEY } from '../repositories/localStorageTimeEntriesRepository'
-import { STORAGE_KEY as SETTINGS_STORAGE_KEY } from '../repositories/localStorageSettingsRepository'
-import { STORAGE_KEY as PREFERENCES_STORAGE_KEY } from '../repositories/localStoragePreferencesRepository'
-import { INSTALL_STORAGE_KEY } from '../repositories/localStorageInstallRepository'
-import {
-  STORAGE_KEY as AUTH_USER_STORAGE_KEY,
-  ACCESS_TOKEN_STORAGE_KEY,
-  HAS_SIGNED_IN_BEFORE_KEY,
-} from '../repositories/localStorageAuthRepository'
-import { STORAGE_KEY as SYNC_SNAPSHOT_STORAGE_KEY } from '../repositories/localStorageSyncRepository'
-import {
-  OWNER_STORAGE_KEY,
-  BACKUPS_STORAGE_KEY as OWNER_BACKUPS_STORAGE_KEY,
-} from '../repositories/localStorageOwnershipRepository'
 // Vite's ?raw loader, so this needs no node typings.
 import html from '../../index.html?raw'
 import robots from '../../public/robots.txt?raw'
@@ -68,50 +54,29 @@ describe('index.html', () => {
     expect(parsed.featureList.length).toBeGreaterThan(0)
   })
 
-  it('names every storage key the app writes', () => {
-    // Imported rather than spelled out, so renaming a key fails here instead of
-    // leaving the notice quietly describing storage that no longer exists.
-    // Covers the signed-in keys too: those went undisclosed for as long as
-    // accounts have existed, which is exactly the drift this guards against.
-    for (const key of [
-      TIME_ENTRIES_STORAGE_KEY,
-      SETTINGS_STORAGE_KEY,
-      PREFERENCES_STORAGE_KEY,
-      VISIT_STORAGE_KEY,
-      INSTALL_STORAGE_KEY,
-      AUTH_USER_STORAGE_KEY,
-      ACCESS_TOKEN_STORAGE_KEY,
-      HAS_SIGNED_IN_BEFORE_KEY,
-      SYNC_SNAPSHOT_STORAGE_KEY,
-      OWNER_STORAGE_KEY,
-      OWNER_BACKUPS_STORAGE_KEY,
-    ]) {
-      expect(html).toContain(`<code>${key}</code>`)
-    }
-  })
+  // The full storage-key-by-storage-key disclosure, the analytics section, and
+  // the signing-in details (refresh_token, HttpOnly, erasure, export) used to
+  // live here and were guarded by name. That text is now the privacy notice on
+  // clockflux-info-front (see its src/pages/PrivacyPage.test.tsx for the
+  // equivalent coverage) — this page keeps only a short, still-accurate
+  // summary and a link to the full notice, checked below.
 
-  it('discloses the analytics, and that it is the cookieless part', () => {
-    // The notice used to claim the site "sets no cookies at all", which stopped
-    // being true the moment accounts shipped: the API sets an HttpOnly
-    // refresh_token on .clockflux.app. Assert the narrower, still-true claim
-    // (analytics sets none) rather than the blanket one.
-    expect(html).toMatch(/Vercel Web Analytics/)
-    expect(html).toMatch(/It sets no cookies/)
-    expect(html).not.toMatch(/sets no cookies at all/)
-  })
-
-  it('discloses what signing in involves', () => {
-    // GDPR Art. 13: accounts, cloud storage and payment are all processing the
-    // notice has to actually describe, not just the local-only free path.
-    expect(html).toContain('<code>refresh_token</code>')
-    expect(html).toMatch(/HttpOnly/)
+  it('summarizes privacy honestly and points to the full notice', () => {
     expect(html).toMatch(/Stripe/)
     expect(html).toMatch(/MongoDB Atlas/)
     expect(html).toMatch(/Fly\.io/)
-    // Retention, erasure and the export route — the rights that need a
-    // stated mechanism, not just an assertion.
-    expect(html).toMatch(/delete your account/i)
-    expect(html).toMatch(/export/i)
+    // Must not repeat claims (e.g. "sets no cookies at all") that the full
+    // notice on the info app has already had to walk back once.
+    expect(html).not.toMatch(/sets no cookies at all/)
+  })
+
+  it('links to the full privacy notice through the env placeholder, not a hardcoded host', () => {
+    // Same reasoning as the account-site link below: a literal
+    // https://info.clockflux.app here would jump straight to production from
+    // a dev server. vite.config.js substitutes this at build and dev-serve
+    // time; see crossAppUrlsInHtml there.
+    expect(html).toContain('href="%VITE_INFO_URL%/privacy"')
+    expect(html).not.toContain('href="https://info.clockflux.app')
   })
 
   it('keeps the pre-paint script in step with the privacy deep link', () => {
@@ -172,7 +137,7 @@ describe('crawler files', () => {
     expect(robots).toContain(`Sitemap: ${new URL('sitemap.xml', CANONICAL).href}`)
   })
 
-  it('sitemap.xml lists the about page', () => {
-    expect(sitemap).toContain('<loc>https://clockflux.app/about/</loc>')
+  it('sitemap.xml lists the info app', () => {
+    expect(sitemap).toContain('<loc>https://info.clockflux.app/</loc>')
   })
 })

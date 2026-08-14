@@ -87,16 +87,24 @@ describe('App', () => {
   })
 
   describe('landing page', () => {
-    it('re-opens the landing from the header and makes the app inert', () => {
-      const landing = mountLandingFixture()
+    // The header's "?" used to reopen the in-app splash; it now links out to
+    // clockflux-info-front instead (see App.tsx's INFO_URL), which carries
+    // the fuller version of the same content. The splash itself still
+    // auto-opens on a first visit and is dismissible — that's covered by
+    // useLandingPage's own behavior, exercised via the fixture below.
+    it('links "?" out to the info app in a new tab, without touching the splash', () => {
+      mountLandingFixture()
       document.documentElement.dataset.landing = 'hidden'
       render(<App />)
 
-      fireEvent.click(screen.getByLabelText('About Clockflux'))
-      expect(document.documentElement.dataset.landing).toBe('visible')
-      expect(document.querySelector('.app')).toHaveAttribute('inert')
+      // Not a literal production URL: a local checkout has VITE_INFO_URL set
+      // in .env (CI doesn't), same reason indexHtml.test.ts avoids one too.
+      const aboutLink = screen.getByLabelText('About Clockflux')
+      expect(aboutLink).toHaveAttribute('href', import.meta.env.VITE_INFO_URL || 'https://info.clockflux.app')
+      expect(aboutLink).toHaveAttribute('target', '_blank')
+      expect(aboutLink).toHaveAttribute('rel', expect.stringContaining('noopener'))
 
-      fireEvent.click(landing.querySelector('[data-landing-dismiss]')!)
+      fireEvent.click(aboutLink)
       expect(document.documentElement.dataset.landing).toBe('hidden')
       expect(document.querySelector('.app')).not.toHaveAttribute('inert')
     })

@@ -91,6 +91,9 @@ body {
   justify-content: center;
   opacity: 0.6;
   transition: opacity 0.15s;
+  /* Now an <a>, not a <button>, since it links out to the info app rather
+     than reopening the in-app landing splash. */
+  text-decoration: none;
 }
 
 .app-about-btn:hover { opacity: 1; }
@@ -2741,20 +2744,6 @@ input[type="time"]:focus {
   color: var(--text);
 }
 
-/* The privacy notice is long enough to need internal structure — one flat run
-   of paragraphs made it impossible to tell the with-account picture from the
-   without-account one at a glance. */
-.landing__subsection-title {
-  margin: 1.25rem 0 0.4rem;
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.landing__subsection-title:first-of-type {
-  margin-top: 1rem;
-}
-
 .landing__text {
   margin: 0;
   font-size: 0.9rem;
@@ -2772,13 +2761,6 @@ input[type="time"]:focus {
 .landing__footer a {
   color: var(--accent-in);
   text-underline-offset: 0.2em;
-}
-
-.landing__section code {
-  font-size: 0.85em;
-  /* Keys are identifiers — never let one wrap mid-token. */
-  white-space: nowrap;
-  color: var(--text);
 }
 
 .landing__pro-heading {
