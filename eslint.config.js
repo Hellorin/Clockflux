@@ -6,7 +6,10 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // coverage/ holds istanbul's generated HTML report, whose bundled scripts
+  // trip the linter — noise that would otherwise fail CI for anyone who ran
+  // the coverage task locally before pushing.
+  globalIgnores(['dist', 'coverage']),
   {
     files: ['**/*.{js,jsx,ts,tsx}'],
     extends: [

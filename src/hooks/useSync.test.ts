@@ -310,4 +310,72 @@ describe('useSync', () => {
     })
     addSpy.mockRestore()
   })
+  // Every call in syncService swallows its own error and returns null, so
+  // before this the hook reported a clean state while nothing had reached the
+  // server. For a paid feature whose entire promise is durability, that
+  // silence was the bug.
+  describe('failure reporting', () => {
+    it('reports a failed push', async () => {
+      vi.mocked(syncService.getSync).mockResolvedValue({
+        data: { days: {}, daysOff: {}, settings },
+        lastSyncedAt: '2026-08-11T10:00:00Z',
+      })
+      vi.mocked(syncService.pushSync).mockResolvedValue(null)
+
+      const { result } = renderHook(() => useSync(baseArgs()))
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+      expect(result.current.syncError).toBeNull()
+
+      await act(async () => {
+        await result.current.syncNow(true)
+      })
+
+      expect(result.current.syncError).toBe('push')
+      // The data is still unsynced, so this must not look settled.
+      expect(result.current.isSyncing).toBe(false)
+    })
+
+    it('reports a failed initial pull', async () => {
+      vi.mocked(syncService.getSync).mockResolvedValue(null)
+
+      const { result } = renderHook(() => useSync(baseArgs()))
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+
+      expect(result.current.syncError).toBe('pull')
+    })
+
+    it('clears the error once a sync succeeds again', async () => {
+      vi.mocked(syncService.getSync).mockResolvedValue(null)
+      const { result } = renderHook(() => useSync(baseArgs()))
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+      expect(result.current.syncError).toBe('pull')
+
+      vi.mocked(syncService.pushSync).mockResolvedValue({ lastSyncedAt: '2026-08-11T11:00:00Z' })
+      await act(async () => {
+        await result.current.syncNow(true)
+      })
+
+      expect(result.current.syncError).toBeNull()
+    })
+
+    it('reports no error when everything works', async () => {
+      vi.mocked(syncService.getSync).mockResolvedValue({
+        data: { days: {}, daysOff: {}, settings },
+        lastSyncedAt: '2026-08-11T10:00:00Z',
+      })
+
+      const { result } = renderHook(() => useSync(baseArgs()))
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(ENTRY_DEBOUNCE_MS)
+      })
+
+      expect(result.current.syncError).toBeNull()
+    })
+  })
 })

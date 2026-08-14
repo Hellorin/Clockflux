@@ -16,9 +16,38 @@ export interface ExportFileResult {
   blob: Blob
 }
 
+/** Extensions the export endpoint can legitimately produce. */
+const ALLOWED_EXPORT_EXTENSIONS = ['csv', 'pdf', 'ics']
+
+/**
+ * Reduces a server-supplied filename to something safe to hand to
+ * `a.download`.
+ *
+ * The header is server-controlled, but `[^"]+` still permits path separators,
+ * newlines and any extension at all — so a compromised or misconfigured
+ * backend could suggest `../../evil.exe` and the browser would offer exactly
+ * that as the download name. Strip it to a bare basename, drop anything that
+ * isn't a plain filename character, and require one of the extensions this
+ * endpoint actually produces; anything else falls back to a name we built
+ * ourselves.
+ */
+function safeFilename(candidate: string | undefined, fallback: string): string {
+  if (!candidate) return fallback
+
+  // Basename only: everything up to the last / or \ is a path, not a name.
+  const basename = candidate.split(/[/\\]/).pop() ?? ''
+  const cleaned = basename.replace(/[^A-Za-z0-9._-]/g, '')
+
+  const extension = cleaned.split('.').pop()?.toLowerCase() ?? ''
+  if (!cleaned || cleaned.startsWith('.') || !ALLOWED_EXPORT_EXTENSIONS.includes(extension)) {
+    return fallback
+  }
+  return cleaned
+}
+
 function filenameFromContentDisposition(header: string | null, fallback: string): string {
   const match = header?.match(/filename="([^"]+)"/)
-  return match ? match[1] : fallback
+  return safeFilename(match?.[1], fallback)
 }
 
 /**

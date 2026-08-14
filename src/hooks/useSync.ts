@@ -44,9 +44,19 @@ interface UseSyncArgs {
  *     no real merge: local wins, same as before, but now it's a narrow
  *     fallback instead of what happens on every single reload.
  */
+/**
+ * Which direction of sync last failed. Every call in syncService swallows its
+ * error and returns null, so without this the hook reported a perfectly
+ * healthy-looking state — isSyncing false, no error anywhere — while nothing
+ * had actually reached the server. For a paid feature whose whole promise is
+ * "your data is safe across devices", that silence is the bug.
+ */
+export type SyncError = 'push' | 'pull'
+
 export function useSync({ enabled, days, daysOff, settings, onRestore }: UseSyncArgs) {
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null)
   const [isSyncing, setIsSyncing] = useState(false)
+  const [syncError, setSyncError] = useState<SyncError | null>(null)
 
   const isSyncingRef = useRef(false)
   const baselineRef = useRef<string | null>(null)
@@ -82,7 +92,11 @@ export function useSync({ enabled, days, daysOff, settings, onRestore }: UseSync
     setIsSyncing(true)
     try {
       const result = await pushSync(accessToken, payload)
-      if (!result) return false
+      if (!result) {
+        setSyncError('push')
+        return false
+      }
+      setSyncError(null)
       setBaseline(payloadSnapshot)
       setLastSyncedAt(new Date(result.lastSyncedAt))
       return true
@@ -105,6 +119,11 @@ export function useSync({ enabled, days, daysOff, settings, onRestore }: UseSync
 
     getSync(accessToken).then(result => {
       if (cancelled) return
+      // A null result here is always a failure, never "nothing stored yet" —
+      // the backend answers 200 with empty data for a user who has never
+      // synced. Reporting it matters because the reconcile below then can't
+      // tell whether the server has newer data, so it quietly does nothing.
+      setSyncError(result ? null : 'pull')
       if (result?.lastSyncedAt) setLastSyncedAt(new Date(result.lastSyncedAt))
 
       const baseline = baselineRef.current ?? emptyBaseline(latestDataRef.current.settings)
@@ -170,5 +189,5 @@ export function useSync({ enabled, days, daysOff, settings, onRestore }: UseSync
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [enabled, syncNow])
 
-  return { lastSyncedAt, isSyncing, isDirty, syncNow }
+  return { lastSyncedAt, isSyncing, isDirty, syncError, syncNow }
 }

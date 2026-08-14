@@ -16,6 +16,14 @@
     "allowJs": true,
     "checkJs": false,
 
+    // "node" is needed by src/test/indexHtml.test.ts, which hashes the inline
+    // JSON-LD block with node:crypto to check it against the CSP hash pinned
+    // in vercel.json. Without it `tsc --noEmit` fails, which is how this went
+    // unnoticed — nothing ran a typecheck. "vite/client" comes for free from
+    // src/vite-env.d.ts and is listed here only because naming `types` at all
+    // replaces the default "every @types package" behaviour.
+    "types": ["node", "vite/client"],
+
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,

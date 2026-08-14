@@ -7,7 +7,15 @@ import ConfirmDialog from './ConfirmDialog'
 import GoogleSignInButton from './GoogleSignInButton'
 import { DARK_THEME_OPTIONS, LIGHT_THEME_OPTIONS } from '../constants/themeColors'
 import { PRO_FEATURES } from '../constants/proFeatures'
+import type { SyncError } from '../hooks/useSync'
 import type { AuthUser, HolidayAccrualMode } from '../types'
+
+// Short label for the sync status line; the fuller explanation of what to do
+// about it goes in the note below it.
+const SYNC_ERROR_LABEL: Record<SyncError, string> = {
+  push: 'Last sync failed',
+  pull: 'Couldn’t check for updates',
+}
 
 interface SettingsPageProps {
   allowance: number
@@ -19,6 +27,8 @@ interface SettingsPageProps {
   showSync?: boolean
   lastSyncedAt?: Date | null
   isSyncing?: boolean
+  /** Set when the last sync attempt failed, so a silent failure isn't shown as a healthy "Last synced …". */
+  syncError?: SyncError | null
   onSyncNow?: () => void
   showThemes?: boolean
   themeLightColor?: string | null
@@ -51,14 +61,20 @@ interface SettingsPageProps {
   user?: AuthUser | null
   onSignIn?: (credential: string) => void
   onSignOut?: () => void
+  /** Permanently deletes the account. Shown only while signed in. */
+  onDeleteAccount?: () => void
+  isDeletingAccount?: boolean
+  /** Set when the last deletion attempt failed, so the user isn't left thinking it worked. */
+  deleteAccountError?: string | null
   /** Pro feature showcase: shown to signed-out/Free callers once paid gating is live, to explain what they're missing. */
   showUpgrade?: boolean
   /** Where the "Upgrade to Pro" link sends the user (clockflux-subscription-front). */
   subscriptionUrl?: string
 }
 
-export default function SettingsPage({ allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange, showSync = false, lastSyncedAt = null, isSyncing = false, onSyncNow, showThemes = false, themeLightColor = null, themeDarkColor = null, onThemeLightColorChange, onThemeDarkColorChange, onPreviewTheme, onPreviewThemeEnd, showDailyTarget = false, dailyTargetHours = 8, onDailyTargetHoursChange, showHolidayCarryover = false, holidayCarryoverEnabled = false, onHolidayCarryoverEnabledChange, showBilling = false, cancelAtPeriodEnd = false, currentPeriodEnd = null, subscriptionInterval = null, isCancellingSubscription = false, onCancelSubscription, showAccount = false, user = null, onSignIn, onSignOut, showUpgrade = false, subscriptionUrl }: SettingsPageProps) {
+export default function SettingsPage({ allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange, showSync = false, lastSyncedAt = null, isSyncing = false, syncError = null, onSyncNow, showThemes = false, themeLightColor = null, themeDarkColor = null, onThemeLightColorChange, onThemeDarkColorChange, onPreviewTheme, onPreviewThemeEnd, showDailyTarget = false, dailyTargetHours = 8, onDailyTargetHoursChange, showHolidayCarryover = false, holidayCarryoverEnabled = false, onHolidayCarryoverEnabledChange, showBilling = false, cancelAtPeriodEnd = false, currentPeriodEnd = null, subscriptionInterval = null, isCancellingSubscription = false, onCancelSubscription, showAccount = false, user = null, onSignIn, onSignOut, onDeleteAccount, isDeletingAccount = false, deleteAccountError = null, showUpgrade = false, subscriptionUrl }: SettingsPageProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const year = useMemo(() => new Date().getFullYear(), [])
   const proratedAllowance = getProratedAllowance(startDate, allowance, year)
   const isProrated = startDate && proratedAllowance !== allowance
@@ -100,6 +116,24 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
                   subscriptionInterval ? `Billed ${formatInterval(subscriptionInterval)}` : null,
                   currentPeriodEnd ? `${cancelAtPeriodEnd ? 'Ends' : 'Renews'} ${formatPeriodEndDate(currentPeriodEnd)}` : null,
                 ].filter(Boolean).join(' · ')}
+              </span>
+            </div>
+          )}
+          {showAccount && user && onDeleteAccount && (
+            <div className="settings-field">
+              <span className="settings-field-label">Delete account</span>
+              <span className="settings-field-control settings-field-control--stacked">
+                <button
+                  type="button"
+                  className="settings-danger-btn"
+                  disabled={isDeletingAccount}
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  {isDeletingAccount ? 'Deleting…' : 'Delete my account'}
+                </button>
+                {deleteAccountError && (
+                  <span className="settings-note settings-note--error" role="alert">{deleteAccountError}</span>
+                )}
               </span>
             </div>
           )}
@@ -203,8 +237,14 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
       {showSync && (
         <SettingsSection title={<><span className="settings-sync-star" aria-hidden="true">✦</span> Sync</>} collapsible={false}>
           <div className="settings-field settings-sync-row">
-            <span className="settings-field-label">
-              {isSyncing ? 'Syncing…' : lastSyncedAt ? `Last synced ${formatSyncTime(lastSyncedAt)}` : 'Never synced yet'}
+            <span className={`settings-field-label${syncError && !isSyncing ? ' settings-field-label--error' : ''}`}>
+              {isSyncing
+                ? 'Syncing…'
+                : syncError
+                  ? SYNC_ERROR_LABEL[syncError]
+                  : lastSyncedAt
+                    ? `Last synced ${formatSyncTime(lastSyncedAt)}`
+                    : 'Never synced yet'}
             </span>
             <button
               type="button"
@@ -228,6 +268,13 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
               </svg>
             </button>
           </div>
+          {syncError && !isSyncing && (
+            <p className="settings-note settings-note--error" role="alert">
+              {syncError === 'push'
+                ? 'Your latest changes are still only on this device. They’ll be sent again automatically — or press the button above to retry now.'
+                : 'We couldn’t reach the server, so changes made on your other devices may be missing here. Press the button above to retry.'}
+            </p>
+          )}
         </SettingsSection>
       )}
 
@@ -287,6 +334,23 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
           danger
           onConfirm={() => { setShowCancelConfirm(false); onCancelSubscription?.() }}
           onCancel={() => setShowCancelConfirm(false)}
+        />
+      )}
+
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          title="Delete your account?"
+          message={
+            (user?.plan === 'pro'
+              ? 'This cancels your subscription and permanently erases your synced history, settings and account. '
+              : 'This permanently erases your account, along with any settings and history stored with it. ') +
+            'It cannot be undone. Export your data first if you want to keep a copy.'
+          }
+          confirmLabel="Delete everything"
+          cancelLabel="Keep my account"
+          danger
+          onConfirm={() => { setShowDeleteConfirm(false); onDeleteAccount?.() }}
+          onCancel={() => setShowDeleteConfirm(false)}
         />
       )}
     </section>
