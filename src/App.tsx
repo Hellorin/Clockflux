@@ -21,6 +21,7 @@ import * as preferencesService from './services/preferencesService'
 import * as authService from './services/authService'
 import { requestExport, downloadExportFile } from './services/exportService'
 import { cancelSubscription } from './services/billingService'
+import { deleteAccount } from './services/accountService'
 import { reconcileOwner } from './services/localDataOwnershipService'
 import type { ExportFormat } from './services/exportService'
 import type { Milestone } from './hooks/useTimeTracker'
@@ -34,7 +35,7 @@ const AUTH_ENABLED = import.meta.env.VITE_ENABLE_AUTH === 'true'
 // login is gated on below — signing in only exists to unlock paid features.
 const PAID_FEATURES_ENABLED = import.meta.env.VITE_ENABLE_PAID_FEATURES === 'true'
 // Where the Settings page's "Upgrade to Pro" link sends a Free user.
-const SUBSCRIPTION_URL = import.meta.env.VITE_SUBSCRIPTION_URL || 'https://subscription.clockflux.app'
+const ACCOUNT_URL = import.meta.env.VITE_ACCOUNT_URL || 'https://account.clockflux.app'
 
 interface SelectedDay {
   dateKey: string
@@ -114,7 +115,7 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run when the signed-in identity changes; the local data read via currentLocalDataRef is checked at that moment, not tracked as a dep (mirrors useSync's latestDataRef pattern)
   }, [user?.email])
 
-  const { lastSyncedAt, isSyncing, isDirty, syncNow } = useSync({
+  const { lastSyncedAt, isSyncing, isDirty, syncError, syncNow } = useSync({
     enabled: syncEnabled,
     days,
     daysOff,
@@ -135,6 +136,41 @@ export default function App() {
     signOut(safeToWipe)
   }, [syncEnabled, isDirty, syncNow, signOut])
 
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+  const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null)
+  const handleDeleteAccount = useCallback(async () => {
+    if (!accessToken) return
+    setIsDeletingAccount(true)
+    setDeleteAccountError(null)
+    const succeeded = await deleteAccount(accessToken)
+    setIsDeletingAccount(false)
+    if (!succeeded) {
+      // Never fall through to signing them out on failure — that would look
+      // exactly like a successful deletion while the account still exists.
+      setDeleteAccountError('We couldn’t delete your account. Please try again, or email info@clockflux.app.')
+      return
+    }
+    // safeToWipe: false deliberately. Deletion just removed the cloud copy,
+    // so for a Pro user the local one is now their only copy — wiping it here
+    // would destroy data they never asked to lose. The next sign-in by a
+    // different account is still guarded by localDataOwnershipService.
+    signOut(false)
+  }, [accessToken, signOut])
+
+  // The dot used to reflect only whether `user` was set, so a Pro user whose
+  // every sync was failing still saw a reassuring green "Signed in". Sync
+  // health is the thing the dot is actually being read for, so let a failure
+  // show through.
+  const connectionStatus = syncEnabled && syncError
+    ? {
+        className: 'app-connection-dot--degraded',
+        label: 'Signed in, sync failing',
+        title: 'Signed in, but syncing is failing — see Settings',
+      }
+    : user
+      ? { className: 'app-connection-dot--online', label: 'Signed in', title: 'Signed in' }
+      : { className: 'app-connection-dot--offline', label: 'Not signed in', title: 'Not signed in — sign in from Settings' }
+
   // If the active tab's feature gets disabled out from under the user (e.g.
   // after sign-out drops an authenticated-only feature), fall back to the
   // first tab that's still enabled rather than rendering a dead tab. Settings
@@ -145,10 +181,6 @@ export default function App() {
     setMilestoneCallback(type => setCelebrationMilestone(type))
     return () => setMilestoneCallback(null)
   }, [setMilestoneCallback])
-
-  useEffect(() => {
-    console.log('[features]', features)
-  }, [features])
 
   // Applies the actual (non-preview) theme: check-in-driven light/dark mode,
   // plus custom theme colors (Pro "themes" feature) overriding the default
@@ -241,10 +273,10 @@ export default function App() {
         </button>
         {AUTH_ENABLED && PAID_FEATURES_ENABLED && (
           <span
-            className={`app-connection-dot${user ? ' app-connection-dot--online' : ' app-connection-dot--offline'}`}
+            className={`app-connection-dot ${connectionStatus.className}`}
             role="status"
-            aria-label={user ? 'Signed in' : 'Not signed in'}
-            title={user ? 'Signed in' : 'Not signed in — sign in from Settings'}
+            aria-label={connectionStatus.label}
+            title={connectionStatus.title}
           />
         )}
       </header>
@@ -310,6 +342,7 @@ export default function App() {
             showSync={syncEnabled}
             lastSyncedAt={lastSyncedAt}
             isSyncing={isSyncing}
+            syncError={syncError}
             onSyncNow={() => syncNow(true)}
             showThemes={themesEnabled}
             themeLightColor={settings.themeLightColor}
@@ -334,8 +367,11 @@ export default function App() {
             user={user}
             onSignIn={signIn}
             onSignOut={handleSignOut}
+            onDeleteAccount={handleDeleteAccount}
+            isDeletingAccount={isDeletingAccount}
+            deleteAccountError={deleteAccountError}
             showUpgrade={showUpgrade}
-            subscriptionUrl={SUBSCRIPTION_URL}
+            accountUrl={ACCOUNT_URL}
           />
         )}
       </main>

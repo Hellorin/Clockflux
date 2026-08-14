@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import SettingsPage from './SettingsPage'
+import type { AuthUser } from '../types'
 
 describe('SettingsPage', () => {
   afterEach(() => {
@@ -378,5 +379,106 @@ describe('SettingsPage', () => {
       />
     )
     expect(screen.queryByText('Billing period')).not.toBeInTheDocument()
+  })
+  const proUser: AuthUser = { name: 'A', email: 'a@example.com', picture: '', plan: 'pro', cancelAtPeriodEnd: false }
+
+  const deletableProps = {
+    allowance: 24,
+    onAllowanceChange: () => {},
+    startDate: null,
+    onStartDateChange: () => {},
+    accrualMode: 'gradual' as const,
+    onAccrualModeChange: () => {},
+    showAccount: true,
+    user: proUser,
+  }
+
+  it('requires confirmation before deleting the account', () => {
+    const onDeleteAccount = vi.fn()
+    render(<SettingsPage {...deletableProps} onDeleteAccount={onDeleteAccount} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete my account' }))
+    // Backing out of the confirmation must not delete anything.
+    fireEvent.click(screen.getByRole('button', { name: 'Keep my account' }))
+    expect(onDeleteAccount).not.toHaveBeenCalled()
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete my account' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Delete everything' }))
+    expect(onDeleteAccount).toHaveBeenCalled()
+  })
+
+  it('warns a Pro user that deleting also cancels their subscription', () => {
+    render(<SettingsPage {...deletableProps} onDeleteAccount={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Delete my account' }))
+
+    expect(screen.getByRole('alertdialog')).toHaveTextContent(/cancels your subscription/)
+    expect(screen.getByRole('alertdialog')).toHaveTextContent(/cannot be undone/)
+  })
+
+  it('hides the delete control when nobody is signed in', () => {
+    render(<SettingsPage {...deletableProps} user={null} onDeleteAccount={() => {}} />)
+
+    expect(screen.queryByRole('button', { name: 'Delete my account' })).not.toBeInTheDocument()
+  })
+
+  it('shows a deleting state while the request is in flight', () => {
+    render(<SettingsPage {...deletableProps} onDeleteAccount={() => {}} isDeletingAccount />)
+
+    expect(screen.getByRole('button', { name: 'Deleting…' })).toBeDisabled()
+  })
+
+  // A silent failure here would read as a successful deletion, which is the
+  // one outcome that must never be ambiguous.
+  it('surfaces a deletion failure instead of failing silently', () => {
+    render(
+      <SettingsPage
+        {...deletableProps}
+        onDeleteAccount={() => {}}
+        deleteAccountError="We couldn’t delete your account."
+      />
+    )
+
+    expect(screen.getByRole('alert')).toHaveTextContent('We couldn’t delete your account.')
+  })
+  const syncProps = {
+    allowance: 24,
+    onAllowanceChange: () => {},
+    startDate: null,
+    onStartDateChange: () => {},
+    accrualMode: 'gradual' as const,
+    onAccrualModeChange: () => {},
+    showSync: true,
+  }
+
+  // A silently failed sync used to render as a reassuring "Last synced ..." —
+  // the paid feature looked healthy while nothing was reaching the server.
+  it('replaces the last-synced line with a failure when a push fails', () => {
+    render(<SettingsPage {...syncProps} lastSyncedAt={new Date('2026-08-11T10:00:00Z')} syncError="push" />)
+
+    expect(screen.getByText('Last sync failed')).toBeInTheDocument()
+    expect(screen.queryByText(/^Last synced/)).not.toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent(/still only on this device/)
+  })
+
+  it('explains a failed pull differently, since the risk is stale data not lost data', () => {
+    render(<SettingsPage {...syncProps} syncError="pull" />)
+
+    expect(screen.getByText('Couldn’t check for updates')).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent(/other devices may be missing/)
+  })
+
+  it('prefers the in-flight state over a previous failure', () => {
+    render(<SettingsPage {...syncProps} syncError="push" isSyncing />)
+
+    expect(screen.getByText('Syncing…')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('shows the normal last-synced line when there is no error', () => {
+    render(<SettingsPage {...syncProps} lastSyncedAt={new Date('2026-08-11T10:00:00Z')} />)
+
+    expect(screen.getByText(/^Last synced/)).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

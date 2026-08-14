@@ -1,7 +1,4 @@
 User-agent: *
 Allow: /
 
-# Dev-only scratch page that rasterizes the icon SVG; not part of the app.
-Disallow: /_icon_render.html
-
 Sitemap: https://clockflux.app/sitemap.xml

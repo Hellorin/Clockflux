@@ -73,7 +73,7 @@ export default function GoogleSignInButton({ user, onSignIn, onSignOut }: Google
         ux_mode: 'redirect',
         // This is the plain, unparameterized callback path — this app is
         // the backend's DefaultFrontendKey ("app"), so it needs no
-        // "/{frontend}" suffix (see clockflux-subscription-front's
+        // "/{frontend}" suffix (see clockflux-account-front's
         // GoogleSignInButton.tsx for the multi-frontend variant, and
         // AuthHandler.GoogleRedirectCallback for why it's a path segment and
         // not a query param or GIS config field: login_uri must exactly

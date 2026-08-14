@@ -5,11 +5,11 @@ export interface ProFeature {
   description: string
 }
 
-// Mirrors the Pro-tier rows of clockflux-subscription-front's
+// Mirrors the Pro-tier rows of clockflux-account-front's
 // src/features.ts (FEATURE_ROWS filtered to tier === 'pro'), which itself
 // mirrors clockflux-back's Feature/Plan model (internal/domain/feature.go).
 // Intentionally duplicated here rather than shared via a package — same
-// tradeoff as this app's auth code, see clockflux-subscription-front's
+// tradeoff as this app's auth code, see clockflux-account-front's
 // README — so keep the two lists in sync by hand when a Pro feature is
 // added, renamed, or its copy changes.
 export const PRO_FEATURES: ProFeature[] = [

@@ -2,7 +2,7 @@ import { localStorageAuthRepository } from '../repositories/localStorageAuthRepo
 import { STORAGE_KEY as TIME_ENTRIES_STORAGE_KEY } from '../repositories/localStorageTimeEntriesRepository'
 import { STORAGE_KEY as SETTINGS_STORAGE_KEY } from '../repositories/localStorageSettingsRepository'
 import type { AuthRepository } from '../repositories/types'
-import type { AuthUser } from '../types'
+import { isAuthUser, type AuthUser } from '../types'
 
 // Single seam for choosing which store backs the signed-in user. Local
 // storage today; once there's a backend this is where we'd branch to a
@@ -14,17 +14,6 @@ function resolveRepository(): AuthRepository {
 interface AuthResponse {
   user: AuthUser
   accessToken: string
-}
-
-function isAuthUser(value: unknown): value is AuthUser {
-  if (!value || typeof value !== 'object') return false
-  const candidate = value as Partial<AuthUser>
-  return (
-    typeof candidate.name === 'string' &&
-    typeof candidate.email === 'string' &&
-    typeof candidate.picture === 'string' &&
-    (candidate.plan === 'free' || candidate.plan === 'pro')
-  )
 }
 
 // Normalizes cancelAtPeriodEnd to a boolean, since it's a newer field the

@@ -91,3 +91,51 @@ describe('downloadExportFile', () => {
     vi.unstubAllGlobals()
   })
 })
+
+// The header is server-controlled, but `[^"]+` still permits path separators
+// and any extension at all — a compromised or misconfigured backend could
+// otherwise put `../../evil.exe` straight into `a.download`.
+describe('filename sanitisation', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  const expectedFallback = `clockflux-export-${baseParams.startDate}-to-${baseParams.endDate}.${baseParams.format}`
+
+  async function filenameFor(disposition: string): Promise<string | undefined> {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response('csv content', { status: 200, headers: { 'Content-Disposition': disposition } })
+    )
+    const result = await requestExport('token', baseParams)
+    return result?.filename
+  }
+
+  it.each([
+    ['path traversal', 'attachment; filename="../../etc/passwd.csv"', 'passwd.csv'],
+    ['windows path', 'attachment; filename="..\\..\\evil.csv"', 'evil.csv'],
+  ])('reduces %s to a bare basename', async (_name, disposition, expected) => {
+    expect(await filenameFor(disposition)).toBe(expected)
+  })
+
+  it.each([
+    ['an executable extension', 'attachment; filename="evil.exe"'],
+    ['no extension', 'attachment; filename="evil"'],
+    ['a dotfile', 'attachment; filename=".bashrc"'],
+    ['a path that reduces to nothing', 'attachment; filename="../../"'],
+  ])('falls back to our own name for %s', async (_name, disposition) => {
+    expect(await filenameFor(disposition)).toBe(expectedFallback)
+  })
+
+  it('strips characters that are not plain filename characters', async () => {
+    expect(await filenameFor('attachment; filename="ex port(1)&.csv"')).toBe('export1.csv')
+  })
+
+  it('leaves a legitimate filename untouched', async () => {
+    expect(await filenameFor('attachment; filename="clockflux-export-2026-07-01-to-2026-07-31.pdf"'))
+      .toBe('clockflux-export-2026-07-01-to-2026-07-31.pdf')
+  })
+})

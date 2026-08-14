@@ -8,8 +8,25 @@
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <title>About Clockflux — Free Work Hours Tracker PWA</title>
-    <meta name="description" content="Clockflux is a free, offline-first work hours tracker. Check in and out with one tap, review your history and calendar, track your holiday allowance, and monitor your work/life balance — all stored locally in your browser, with no account and no server." />
+    <meta name="description" content="Clockflux is a free, offline-first work hours tracker. Check in and out with one tap, review your history and calendar, track your holiday allowance, and monitor your work/life balance — free with no account, stored locally in your browser. Optional Pro plan adds cloud sync and exports." />
     <link rel="canonical" href="https://clockflux.app/about/" />
+    <!-- Link previews. Without these, sharing Clockflux anywhere (Slack,
+         WhatsApp, X, LinkedIn) renders a bare URL with no title, description
+         or image. og:image points at the app icon, which is already in
+         public/ and already allowed by the CSP's img-src 'self'. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Clockflux" />
+    <meta property="og:title" content="About Clockflux — Free Work Hours Tracker" />
+    <meta property="og:description" content="Track your work hours with one tap. Free, offline-first, no account needed. Optional Pro plan adds cloud sync and exports." />
+    <meta property="og:url" content="https://clockflux.app/about/" />
+    <meta property="og:image" content="https://clockflux.app/icon-512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="The Clockflux app icon" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="About Clockflux — Free Work Hours Tracker" />
+    <meta name="twitter:description" content="Track your work hours with one tap. Free, offline-first, no account needed. Optional Pro plan adds cloud sync and exports." />
+    <meta name="twitter:image" content="https://clockflux.app/icon-512.png" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -106,18 +123,17 @@
         </section>
 
         <section class="landing__section landing__section--plans">
-          <h2 class="landing__section-title">Free today, Pro coming soon</h2>
+          <h2 class="landing__section-title">Free forever, with an optional Pro plan</h2>
           <p class="landing__text">
-            Everything above — the tracker, calendar, holiday allowance, and health view — is
+            Everything above &mdash; the tracker, calendar, holiday allowance, and health view &mdash; is
             entirely free, works offline, and needs no account. That stays true for good:
             nothing here moves behind a paywall later.
           </p>
           <p class="landing__pro-heading">
-            <span class="settings-sync-star" aria-hidden="true">✦</span>
+            <span class="settings-sync-star" aria-hidden="true">&#10022;</span>
             <strong>Clockflux Pro</strong>
-            <span class="landing__badge">Coming soon</span>
           </p>
-          <p class="landing__text">Adds, on top of everything free above:</p>
+          <p class="landing__text">A paid subscription that adds, on top of everything free above:</p>
           <ul class="landing__plan-list">
             <li>Cloud sync across every device you use Clockflux on</li>
             <li>Custom light and dark themes</li>
@@ -126,41 +142,105 @@
             <li>Unlimited history, with nothing archived or trimmed</li>
             <li>A custom daily target instead of the default 8 hours</li>
           </ul>
+          <p class="landing__text">
+            Pro needs an account, so signing in and syncing means some of your data reaches our
+            servers &mdash; the Privacy section below spells out exactly what. It renews until you
+            cancel, you can cancel it yourself at any time from Settings, and you can delete your
+            account (and everything we hold for you) from there too. See
+            <a href="%VITE_ACCOUNT_URL%/">pricing and full terms</a>.
+          </p>
         </section>
 
         <section class="landing__section" id="privacy">
           <h2 class="landing__section-title">Privacy</h2>
           <p class="landing__text">
-            On the free version, everything you track is written to your own browser's local storage and stays
-            there. Clockflux keeps five entries: <code>app</code> for your sessions and
-            days off, <code>appSettings</code> for your holiday allowance and start
-            date, <code>hoursFormat</code> for whether you prefer decimal or h:mm,
-            <code>appVisited</code> to remember that you have seen this page, and
-            <code>appInstallState</code> to remember whether you have installed the app
-            to your home screen or dismissed that offer. None of it
-            is sent anywhere, and there is no account and no server holding a copy — which
-            also means that clearing your browser data for this site erases your history for
-            good. Just keep in mind that if you clear your cache, you might lose data. Think about Clockflux Pro ✦ to avoid losing anything.
+            There are two different pictures here, depending on whether you sign in. Without an
+            account, nothing you track leaves your device at all. With one, some of it does. This
+            section covers both.
           </p>
+
+          <h3 class="landing__subsection-title">Without an account (the free app)</h3>
+          <p class="landing__text">
+            Everything you track is written to your own browser&rsquo;s local storage and stays
+            there. Clockflux keeps <code>app</code> for your sessions and days off,
+            <code>appSettings</code> for your holiday allowance and start date,
+            <code>hoursFormat</code> for whether you prefer decimal or h:mm,
+            <code>appVisited</code> to remember that you have seen this page, and
+            <code>appInstallState</code> to remember whether you have installed the app to your
+            home screen or dismissed that offer. None of it is sent anywhere, and there is no
+            server holding a copy &mdash; which also means that clearing your browser data for
+            this site erases your history for good. Consider Clockflux Pro &#10022; if you would
+            rather not rely on a single browser.
+          </p>
+
+          <h3 class="landing__subsection-title">With an account</h3>
+          <p class="landing__text">
+            Signing in uses Google. Google tells us your name, email address and profile picture,
+            and gives us a stable identifier for your account; we never see your Google password.
+            We store those three details, your plan, and &mdash; on Pro &mdash; your time entries,
+            days off and settings, so they can sync between your devices. Our servers run on
+            Fly.io and the database is MongoDB Atlas, both in the EU.
+          </p>
+          <p class="landing__text">
+            Signing in also adds local storage entries: <code>appUser</code> for the cached
+            profile the app renders, <code>appAccessToken</code> for the short-lived token it
+            calls the API with, <code>appLastSyncedSnapshot</code> and <code>appDataOwner</code>
+            (plus <code>appDataOwnerBackups</code>) so sync can tell your data apart from another
+            account&rsquo;s on a shared browser, and <code>appHasSignedInBefore</code> &mdash;
+            which is deliberately kept even after you sign out, purely so the app can say
+            &ldquo;you have signed in here before&rdquo; instead of looking like it silently
+            downgraded you.
+          </p>
+          <p class="landing__text">
+            Staying signed in needs one cookie: <code>refresh_token</code>, set by our own API on
+            <code>.clockflux.app</code>. It is HttpOnly, so no script can read it, and it exists
+            only to keep your session alive across page loads. It is not used to track you, here
+            or anywhere else.
+          </p>
+
+          <h3 class="landing__subsection-title">Paying for Pro</h3>
+          <p class="landing__text">
+            Payments are handled by Stripe, which is the merchant of record for the sale. Your
+            card details go to Stripe and never touch our servers. We store a Stripe customer and
+            subscription identifier against your account, plus your plan and renewal date, so we
+            know what you are entitled to. Stripe keeps the invoice and tax records the law
+            requires it to.
+          </p>
+
+          <h3 class="landing__subsection-title">Analytics</h3>
           <p class="landing__text">
             The site uses Vercel Web Analytics to count visits. It records page views and
             referrers only. It sets no cookies, it does not follow you to other sites, and it
-            never sees the hours you log — that data never leaves your device for it to see.
-            To tell repeat visits apart it derives a hash from your IP address and browser
-            details, which Vercel discards and regenerates each day, so it cannot be used to
-            recognise you over time. That processing rests on our legitimate interest in
-            knowing roughly how many people use Clockflux.
+            never sees the hours you log. To tell repeat visits apart it derives a hash from your
+            IP address and browser details, which Vercel discards and regenerates each day, so it
+            cannot be used to recognise you over time. That processing rests on our legitimate
+            interest in knowing roughly how many people use Clockflux.
           </p>
           <p class="landing__text">
-            There is no cookie banner because there is nothing to ask you about: the site sets
-            no cookies at all, and everything stored on your device is what the tracker needs
-            in order to be a tracker.
+            There is no cookie banner because there is nothing to ask you about. The only cookie
+            we set is the sign-in one described above, which is strictly necessary for a feature
+            you asked for, and analytics sets none at all.
+          </p>
+
+          <h3 class="landing__subsection-title">Your data, and getting rid of it</h3>
+          <p class="landing__text">
+            We do not sell your data, we do not use it to build a profile of you, and we do not
+            use it to train anything. You can export your entries from the app at any time. You
+            can delete your account from Settings, which cancels any subscription and erases
+            everything we hold for you &mdash; the one exception being the invoice and tax records
+            Stripe and we are legally required to keep. Deleting your account does not touch the
+            copy in your own browser.
           </p>
           <p class="landing__text">
-            Questions, or want your analytics data excluded? Email
-            <a href="mailto:info@clockflux.app">info@clockflux.app</a>.
+            While you have an account, we keep your data for as long as the account exists. Sign-in
+            sessions expire on their own within 30 days of last use.
           </p>
-          <p class="landing__text"><em>Last updated 6 August 2026.</em></p>
+          <p class="landing__text">
+            You have the right to access, correct, export or erase your data, and to object to the
+            analytics processing above. Email
+            <a href="mailto:info@clockflux.app">info@clockflux.app</a> and we will sort it out.
+          </p>
+          <p class="landing__text"><em>Last updated 14 August 2026.</em></p>
         </section>
 
         <footer class="landing__footer">

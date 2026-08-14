@@ -60,6 +60,26 @@ export interface AuthUser {
   subscriptionInterval?: string
 }
 
+/**
+ * Narrows unknown JSON to an AuthUser.
+ *
+ * Lives here rather than in authService so the localStorage repository can
+ * use it too without importing the service that imports it. Both the network
+ * response and the stored copy are parsed JSON of unknown shape, and both feed
+ * `plan`-based routing and feature flags — validating one but not the other
+ * left the storage path trusting whatever happened to be in localStorage.
+ */
+export function isAuthUser(value: unknown): value is AuthUser {
+  if (!value || typeof value !== 'object') return false
+  const candidate = value as Partial<AuthUser>
+  return (
+    typeof candidate.name === 'string' &&
+    typeof candidate.email === 'string' &&
+    typeof candidate.picture === 'string' &&
+    (candidate.plan === 'free' || candidate.plan === 'pro')
+  )
+}
+
 /** Everything a Pro user's data-sync push/pull carries: time entries plus holiday settings. */
 export interface SyncData {
   days: DaysMap

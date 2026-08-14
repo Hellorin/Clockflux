@@ -113,6 +113,12 @@ body {
   background: #e74c3c;
 }
 
+/* Signed in, but sync is failing. Amber rather than red: the session is fine
+   and nothing is lost — it just isn't reaching the server yet. */
+.app-connection-dot--degraded {
+  background: #f39c12;
+}
+
 .app-auth-btn {
   width: 2rem;
   height: 2rem;
@@ -1929,6 +1935,41 @@ input[type="time"]:focus {
   opacity: 0.7;
 }
 
+/* Account deletion. Styled distinctly from settings-cancel-btn — cancelling a
+   subscription is reversible, this is not — but deliberately not as a filled
+   red button, so it doesn't read as the primary action in the section. */
+.settings-danger-btn {
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent-out);
+  background: transparent;
+  border: 1px solid var(--accent-out);
+  border-radius: 8px;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+}
+
+.settings-danger-btn:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+/* Stacks the button above its error message; the default control layout is a
+   single baseline-aligned row. */
+.settings-field-control--stacked {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+}
+
+.settings-note--error {
+  color: var(--accent-out);
+  font-style: normal;
+  text-align: right;
+  max-width: 22ch;
+}
+
 .settings-upgrade-intro {
   font-style: normal;
 }
@@ -2700,6 +2741,20 @@ input[type="time"]:focus {
   color: var(--text);
 }
 
+/* The privacy notice is long enough to need internal structure — one flat run
+   of paragraphs made it impossible to tell the with-account picture from the
+   without-account one at a glance. */
+.landing__subsection-title {
+  margin: 1.25rem 0 0.4rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.landing__subsection-title:first-of-type {
+  margin-top: 1rem;
+}
+
 .landing__text {
   margin: 0;
   font-size: 0.9rem;
@@ -2740,18 +2795,6 @@ input[type="time"]:focus {
   align-self: center;
 }
 
-.landing__badge {
-  display: inline-block;
-  padding: 0.15em 0.6em;
-  border-radius: 999px;
-  border: 1px solid var(--accent-in);
-  color: var(--accent-in);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
 .landing__plan-list {
   margin: 0.5rem 0 0;
   padding-left: 1.2rem;
@@ -2768,4 +2811,71 @@ input[type="time"]:focus {
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+}
+
+/* ─── Crash screen (ErrorBoundary) ──────────────────────────────────────── */
+/* Sized and styled independently of the app shell: whatever broke may be the
+   layout itself, so this must not depend on anything below the boundary. */
+.app-crash {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 3rem 1.25rem;
+  text-align: center;
+  color: var(--text);
+}
+
+.app-crash__title {
+  margin: 0 0 0.75rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.app-crash__text {
+  margin: 0 0 1rem;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.app-crash__text--muted {
+  font-size: 0.82rem;
+}
+
+.app-crash__text a {
+  color: var(--accent-in);
+}
+
+.app-crash__btn {
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--bg);
+  background: var(--accent-in);
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 1.1rem;
+  margin-bottom: 1.25rem;
+  cursor: pointer;
+}
+
+.app-crash__details {
+  margin-top: 0.5rem;
+  text-align: left;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.app-crash__details summary {
+  cursor: pointer;
+}
+
+.app-crash__pre {
+  margin: 0.5rem 0 0;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface-alt);
+  border-radius: 8px;
+  /* A stack trace is wide; scroll it rather than letting it widen the page. */
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
 }

@@ -1,15 +1,25 @@
-import type { AuthUser } from '../types'
+import { isAuthUser, type AuthUser } from '../types'
 import type { AuthRepository } from './types'
 
-const STORAGE_KEY = 'appUser'
-const ACCESS_TOKEN_STORAGE_KEY = 'appAccessToken'
-const HAS_SIGNED_IN_BEFORE_KEY = 'appHasSignedInBefore'
+// Exported so the privacy notice's drift guard (src/test/indexHtml.test.ts)
+// can assert these are actually disclosed, rather than the notice quietly
+// describing a subset of what the app writes.
+export const STORAGE_KEY = 'appUser'
+export const ACCESS_TOKEN_STORAGE_KEY = 'appAccessToken'
+export const HAS_SIGNED_IN_BEFORE_KEY = 'appHasSignedInBefore'
 
 export const localStorageAuthRepository: AuthRepository = {
   loadUser(): AuthUser | null {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
-      return raw ? (JSON.parse(raw) as AuthUser) : null
+      if (!raw) return null
+      // Validated rather than cast: this value drives plan-based routing and
+      // feature flags, and it comes from storage anything on the origin can
+      // write. Treat a malformed entry as "not signed in" — the backend is
+      // authoritative on entitlements anyway, so the worst case is one extra
+      // sign-in rather than a broken render.
+      const parsed: unknown = JSON.parse(raw)
+      return isAuthUser(parsed) ? parsed : null
     } catch {
       return null
     }
