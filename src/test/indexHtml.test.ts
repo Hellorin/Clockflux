@@ -21,6 +21,8 @@ import robots from '../../public/robots.txt?raw'
 import sitemap from '../../public/sitemap.xml?raw'
 import landingInit from '../../public/landing-init.js?raw'
 import vercelConfig from '../../vercel.json?raw'
+import viteConfig from '../../vite.config.js?raw'
+import appTsx from '../App.tsx?raw'
 
 // The landing page and the SEO tags are static markup in index.html, which no
 // component test ever loads — Vitest imports App directly. These assertions are
@@ -123,6 +125,25 @@ describe('index.html', () => {
     expect(html).toMatch(/work hours/i)
     expect(html).toMatch(/offline/i)
     expect(html).toMatch(/holiday/i)
+  })
+
+  it('links to the subscription site through the env placeholder, not a hardcoded host', () => {
+    // A literal https://subscription.clockflux.app here would jump straight to
+    // production from a dev server. vite.config.js substitutes this at build
+    // and dev-serve time; see subscriptionUrlInHtml there.
+    expect(html).toContain('href="%VITE_SUBSCRIPTION_URL%/"')
+    expect(html).not.toContain('href="https://subscription.clockflux.app')
+  })
+
+  it('uses the same subscription-site fallback in the HTML and in App.tsx', () => {
+    // Two independent code paths link to the subscription site — the static
+    // markup (via vite.config.js) and Settings (via App.tsx) — so they need
+    // the same default when VITE_SUBSCRIPTION_URL is unset.
+    const fallbackIn = (source: string) =>
+      /['"](https:\/\/subscription\.clockflux\.app)['"]/.exec(source)?.[1]
+
+    expect(fallbackIn(viteConfig)).toBeTruthy()
+    expect(fallbackIn(appTsx)).toBe(fallbackIn(viteConfig))
   })
 
   it('keeps the CSP script hash in step with the structured-data block', () => {
