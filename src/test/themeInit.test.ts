@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 // Vite's ?raw loader, so this needs no node typings.
 import themeInit from '../../public/theme-init.js?raw'
 
@@ -64,5 +64,48 @@ describe('theme-init.js', () => {
     runThemeInit()
 
     expect(document.documentElement.getAttribute('data-theme')).toBe('light')
+  })
+
+  // The check-in probe used toISOString(), which is UTC, while the rest of the
+  // app keys off the local date. For anyone west of Greenwich that read the
+  // *next* day's key from roughly 19:00 local onwards — finding no session and
+  // painting the dark "resting" theme, which React then corrected. A visible
+  // flash of the wrong theme every evening.
+  describe('the check-in probe', () => {
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    function withLocalDate(date: Date, run: () => void) {
+      vi.useFakeTimers()
+      vi.setSystemTime(date)
+      run()
+    }
+
+    it('reads the local date, not the UTC one', () => {
+      // 2026-08-14 21:30 local. In any timezone behind UTC this is still the
+      // 14th locally while UTC has not yet rolled over; ahead of UTC it has.
+      // Either way the session is stored under the *local* key, so a UTC read
+      // would miss it.
+      const now = new Date(2026, 7, 14, 21, 30, 0)
+      const localKey = '2026-08-14'
+      localStorage.setItem(
+        'app',
+        JSON.stringify({ days: { [localKey]: [{ checkIn: now.toISOString(), checkOut: null }] } })
+      )
+
+      withLocalDate(now, runThemeInit)
+
+      expect(document.documentElement.getAttribute('data-theme')).toBe('light')
+    })
+
+    it('paints the resting theme when nothing is running', () => {
+      const now = new Date(2026, 7, 14, 21, 30, 0)
+      localStorage.setItem('app', JSON.stringify({ days: {} }))
+
+      withLocalDate(now, runThemeInit)
+
+      expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+    })
   })
 })

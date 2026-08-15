@@ -1,5 +1,5 @@
 import { Analytics } from "@vercel/analytics/react"
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { useTimeTracker } from './hooks/useTimeTracker'
 import { useAppSettings } from './hooks/useAppSettings'
 import { useLandingPage } from './hooks/useLandingPage'
@@ -10,13 +10,11 @@ import SlideToggle from './components/SlideToggle'
 import LiveTimer from './components/LiveTimer'
 import TodaySummary from './components/TodaySummary'
 import HistoryList from './components/HistoryList'
-import CalendarView from './components/CalendarView'
+
 import DayEditModal from './components/DayEditModal'
 import CelebrationOverlay from './components/CelebrationOverlay'
 import InstallPrompt from './components/InstallPrompt'
-import HealthPage from './components/HealthPage'
-import HolidayPage from './components/HolidayPage'
-import SettingsPage from './components/SettingsPage'
+
 import { formatDateKey, getGreeting } from './utils/time'
 import * as preferencesService from './services/preferencesService'
 import * as authService from './services/authService'
@@ -27,6 +25,16 @@ import { reconcileOwner } from './services/localDataOwnershipService'
 import type { ExportFormat } from './services/exportService'
 import type { Milestone } from './hooks/useTimeTracker'
 import type { HoursFormat, Session } from './types'
+
+// The four views behind a tab, split out of the initial bundle. Everything
+// shipped as one ~300 KB chunk, so the Calendar, Health, Holiday and Settings
+// pages all had to download and parse before the check-in button — the one
+// control most sessions consist of — could paint. Each is fetched the first
+// time its tab is opened.
+const CalendarView = lazy(() => import('./components/CalendarView'))
+const HealthPage = lazy(() => import('./components/HealthPage'))
+const HolidayPage = lazy(() => import('./components/HolidayPage'))
+const SettingsPage = lazy(() => import('./components/SettingsPage'))
 
 type View = 'tracker' | 'calendar' | 'holiday' | 'health' | 'settings'
 
@@ -260,6 +268,7 @@ export default function App() {
     <CelebrationOverlay
       milestone={celebrationMilestone}
       onDismiss={() => setCelebrationMilestone(null)}
+      dailyTargetHours={settings.dailyTargetHours}
     />
     <div className="app" inert={isLandingOpen}>
       <header className="app-header">
@@ -322,6 +331,11 @@ export default function App() {
             <HistoryList allDays={allDays} todayKey={todayKey} hoursFormat={hoursFormat} daysOff={daysOff} dailyTargetHours={settings.dailyTargetHours} />
           </>
         )}
+        {/* One boundary around all four lazy views: they're mutually exclusive
+            tabs, so only ever one is suspending. The fallback is deliberately
+            empty — the chunk is small and same-origin, so a spinner would
+            usually flash for a frame and read as jank rather than progress. */}
+        <Suspense fallback={null}>
         {activeView === 'calendar' && (
           <CalendarView
             allDays={allDays}
@@ -402,6 +416,7 @@ export default function App() {
             accountUrl={ACCOUNT_URL}
           />
         )}
+        </Suspense>
       </main>
 
       {selectedDay && (

@@ -44,6 +44,13 @@ function crossAppUrlsInHtml(mode) {
 
 export default defineConfig(({ mode }) => ({
   build: {
+    // Hidden source maps: emitted for debugging, but with no
+    // //# sourceMappingURL comment, so a browser only loads them if someone
+    // deliberately points a devtool at them. Without any map at all, a
+    // production crash report is a minified stack that says nothing — and the
+    // error reporter has no SDK wired in yet, so the user's own console is
+    // currently the only place a crash is visible.
+    sourcemap: 'hidden',
     rollupOptions: {
       input: {
         main: resolve(rootDir, 'index.html'),

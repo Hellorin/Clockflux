@@ -6,7 +6,11 @@ import { mountLandingFixture } from './test/landingFixture'
 describe('App', () => {
   beforeEach(() => {
     localStorage.clear()
-    vi.useFakeTimers()
+    // shouldAdvanceTime lets the real clock keep ticking underneath the fake
+    // one. Testing Library's findBy*/waitFor poll on a timer, and the tab views
+    // are React.lazy'd — so without this, a frozen clock means the poll never
+    // runs and every lazy view assertion times out at 5s.
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     vi.setSystemTime(new Date('2024-01-10T12:00:00.000Z')) // Wednesday
   })
 
@@ -26,16 +30,19 @@ describe('App', () => {
     expect(screen.getByRole('switch')).toBeInTheDocument()
   })
 
-  it('navigates between tabs', () => {
+  // The tab views are React.lazy'd out of the initial bundle, so each one
+  // resolves asynchronously the first time its tab is opened — hence findBy
+  // rather than getBy here.
+  it('navigates between tabs', async () => {
     render(<App />)
     fireEvent.click(screen.getByText('Calendar'))
-    expect(screen.getByText('Week')).toBeInTheDocument()
+    expect(await screen.findByText('Week')).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('Holiday'))
-    expect(screen.getByText('Holiday balance')).toBeInTheDocument()
+    expect(await screen.findByText('Holiday balance')).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('Health'))
-    expect(screen.getByText('No data yet')).toBeInTheDocument()
+    expect(await screen.findByText('No data yet')).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('Track')).toString()
     expect(screen.getByRole('switch')).toBeInTheDocument()
@@ -59,9 +66,10 @@ describe('App', () => {
     expect(localStorage.getItem('hoursFormat')).toBe('hhmm')
   })
 
-  it('opens the day edit modal from the calendar and saves sessions', () => {
+  it('opens the day edit modal from the calendar and saves sessions', async () => {
     render(<App />)
     fireEvent.click(screen.getByText('Calendar'))
+    await screen.findByText('Week') // the lazy Calendar chunk has resolved
     const cell = Array.from(document.querySelectorAll('.cal-day')).find(el => el.textContent.startsWith('10'))
     fireEvent.click(cell!)
     expect(screen.getByLabelText('Close')).toBeInTheDocument()
@@ -69,9 +77,10 @@ describe('App', () => {
     expect(screen.queryByLabelText('Close')).not.toBeInTheDocument()
   })
 
-  it('closes the day edit modal without saving', () => {
+  it('closes the day edit modal without saving', async () => {
     render(<App />)
     fireEvent.click(screen.getByText('Calendar'))
+    await screen.findByText('Week')
     const cell = Array.from(document.querySelectorAll('.cal-day')).find(el => el.textContent.startsWith('10'))
     fireEvent.click(cell!)
     fireEvent.click(screen.getByLabelText('Close'))

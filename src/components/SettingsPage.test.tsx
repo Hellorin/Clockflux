@@ -27,7 +27,11 @@ describe('SettingsPage', () => {
 
     fireEvent.click(screen.getByText('Holiday'))
 
-    fireEvent.change(screen.getByLabelText('Annual holiday allowance'), { target: { value: '30' } })
+    // Committed on blur rather than per keystroke, so a partial entry like
+    // "0." survives long enough to become "0.5" — see NumberField.
+    const allowanceInput = screen.getByLabelText('Annual holiday allowance')
+    fireEvent.change(allowanceInput, { target: { value: '30' } })
+    fireEvent.blur(allowanceInput)
     expect(onAllowanceChange).toHaveBeenCalledWith('30')
 
     fireEvent.change(screen.getByLabelText('Employment start date'), { target: { value: '2024-04-01' } })

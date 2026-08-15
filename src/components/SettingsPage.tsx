@@ -7,6 +7,7 @@ import ConfirmDialog from './ConfirmDialog'
 import GoogleSignInButton from './GoogleSignInButton'
 import { DARK_THEME_OPTIONS, LIGHT_THEME_OPTIONS } from '../constants/themeColors'
 import { PRO_FEATURES } from '../constants/proFeatures'
+import NumberField from './NumberField'
 import type { SyncError } from '../hooks/useSync'
 import type { AuthUser, HolidayAccrualMode } from '../types'
 
@@ -186,12 +187,11 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
         <label className="settings-field">
           <span className="settings-field-label">Annual allowance</span>
           <span className="settings-field-control">
-            <input
-                type="number"
-                min="0"
+            <NumberField
+                inputMode="numeric"
                 className="settings-field-input"
                 value={allowance}
-                onChange={e => onAllowanceChange(e.target.value)}
+                onCommit={onAllowanceChange}
                 aria-label="Annual holiday allowance"
             />
             <span className="settings-field-suffix">days/yr</span>
@@ -333,13 +333,11 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
           <label className="settings-field">
             <span className="settings-field-label">Hours per day</span>
             <span className="settings-field-control">
-              <input
-                  type="number"
-                  min="0"
-                  step="0.5"
+              <NumberField
+                  inputMode="decimal"
                   className="settings-field-input"
                   value={dailyTargetHours}
-                  onChange={e => onDailyTargetHoursChange?.(e.target.value)}
+                  onCommit={value => onDailyTargetHoursChange?.(value)}
                   aria-label="Daily target hours"
               />
               <span className="settings-field-suffix">hrs/day</span>
