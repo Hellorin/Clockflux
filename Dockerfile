@@ -48,9 +48,19 @@ FROM nginx:1.27-alpine AS serve
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 
-EXPOSE 80
+# nginx's master process runs as root by default. The nginx:alpine image ships
+# an unprivileged `nginx` user; these are the paths it needs to write, and the
+# listen port has to move above 1024 since a non-root process can't bind 80.
+# (The backend Dockerfile already does the equivalent with adduser/USER.)
+RUN sed -i 's/listen 80;/listen 8080;/' /etc/nginx/conf.d/default.conf \
+  && sed -i 's,^pid .*,pid /tmp/nginx.pid;,' /etc/nginx/nginx.conf \
+  && chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /etc/nginx/conf.d
+
+USER nginx
+
+EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
-  CMD wget -q --spider http://localhost/ || exit 1
+  CMD wget -q --spider http://localhost:8080/ || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]
