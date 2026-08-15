@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import type { CSSProperties } from 'react'
 import { formatDateKey, isWeekend } from '../utils/time'
 import { isHalfDayOff, dayOffBaseType, DAY_OFF_BASE_TYPES } from '../utils/dayOff'
@@ -151,6 +152,10 @@ export default function DayEditModal({ dateKey, sessions, onSave, onClose, dayOf
     return isFullDayOff ? [] : DEFAULT_ROWS.map((r, i) => ({ id: i, ...r }))
   })
 
+  // Confines Tab to the dialog and restores focus on close — it declared
+  // aria-modal="true" but Tab walked straight out into the page behind.
+  const dialogRef = useFocusTrap<HTMLDivElement>()
+
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') onClose()
   }, [onClose])
@@ -191,7 +196,7 @@ export default function DayEditModal({ dateKey, sessions, onSave, onClose, dayOf
   return (
     <div className="modal-backdrop">
       <button type="button" className="modal-backdrop__scrim" onClick={onClose} aria-label="Close dialog" />
-      <div className="modal" role="dialog" aria-modal="true" aria-label={formatDateKey(dateKey)}>
+      <div ref={dialogRef} className="modal" role="dialog" aria-modal="true" aria-label={formatDateKey(dateKey)}>
         <div className="modal-header">
           <span className="modal-title">{formatDateKey(dateKey)}</span>
           <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Close">×</button>
