@@ -1,3 +1,4 @@
+import { apiFetch } from './apiClient'
 export interface FeaturesResponse {
   authenticated: boolean
   features: string[]
@@ -29,18 +30,11 @@ function isFeaturesResponse(value: unknown): value is FeaturesResponse {
  * the anonymous set.
  */
 export async function getFeatures(accessToken?: string): Promise<FeaturesResponse | null> {
-  try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/features`, {
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-      credentials: 'include',
-    })
-    if (!response.ok) return null
-    const data = await response.json()
-    if (!isFeaturesResponse(data)) return null
-    return data
-  } catch {
-    return null
-  }
+  // Deliberately no 401 retry: this route serves an anonymous feature set too,
+  // so a 401 here is a legitimate answer rather than an expired session, and
+  // getFeaturesOrDefault already degrades sensibly.
+  const result = await apiFetch({ path: '/api/v1/features', accessToken }, isFeaturesResponse)
+  return result.ok ? result.value : null
 }
 
 /**

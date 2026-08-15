@@ -9,6 +9,13 @@ import type { AuthUser } from '../types'
 // ever tuned much shorter than that on the backend, this should shrink too.
 const REFRESH_INTERVAL_MS = 10 * 60 * 1000
 
+// Backoff for a refresh that failed for a reason other than the session being
+// over — offline, a timeout, a backend blip. Starts well inside the token's
+// remaining life so a brief outage costs nothing, and caps below the heartbeat
+// interval so the two never drift far apart.
+const RETRY_BASE_MS = 15 * 1000
+const RETRY_MAX_MS = 5 * 60 * 1000
+
 export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(authService.loadUser)
   const [features, setFeatures] = useState<Feature[]>(DEFAULT_FEATURES)
@@ -21,6 +28,9 @@ export function useAuth() {
   // (whose job is covering a *stale* token from localStorage) can skip that
   // redundant first round-trip and just start ticking.
   const skipNextHeartbeatRefreshRef = useRef(false)
+  // Drives the backoff below, reset on every successful refresh.
+  const consecutiveFailuresRef = useRef(0)
+  const retryTimerRef = useRef<number | undefined>(undefined)
 
   // Load the feature set as soon as the app mounts, using whatever access
   // token (if any) is already stored, so anonymous and returning-signed-in
@@ -93,10 +103,14 @@ export function useAuth() {
   // Keeps a signed-in session alive past the access token's short expiry:
   // refreshes once immediately (covers a tab reopened, or the page reloaded,
   // after the access token already expired while it was closed) and then on
-  // a heartbeat for as long as the tab stays open and signed in. A failed
-  // refresh means the refresh token itself is gone (expired, revoked, or
-  // signed out elsewhere), so it signs out locally to match reality rather
-  // than leaving a stale "signed in" state around with dead credentials.
+  // a heartbeat for as long as the tab stays open and signed in.
+  //
+  // A 401 means the refresh token itself is gone (expired, revoked, or signed
+  // out elsewhere), so it signs out locally to match reality rather than
+  // leaving a stale "signed in" state with dead credentials. Any *other*
+  // failure — offline, timeout, backend blip — leaves the session alone and
+  // retries with backoff, because it says nothing about whether the session is
+  // still valid.
   //
   // Depends on the boolean "is anyone signed in" rather than `user` itself,
   // so a successful refresh (which replaces `user` with a new object) does
@@ -108,13 +122,22 @@ export function useAuth() {
     let cancelled = false
 
     async function refresh() {
-      const refreshed = await authService.refreshAccessToken()
+      const result = await authService.refreshSession()
       if (cancelled) return
 
-      if (!refreshed) {
-        // The session died (refresh token expired/revoked/signed out
-        // elsewhere) — that's not evidence the cloud copy is current, so
-        // never wipe local Pro data here.
+      if (!result.ok) {
+        // Only a 401 means the refresh token is actually spent (expired,
+        // revoked, or signed out elsewhere). This used to sign the user out on
+        // *any* failure, because refreshAccessToken collapsed everything to
+        // null — so one dropped request on a train ended a perfectly valid
+        // session and, for a Pro user, took their sync with it.
+        if (result.error !== 'auth') {
+          scheduleRetry()
+          return
+        }
+
+        // The session really is over. That's not evidence the cloud copy is
+        // current, so never wipe local Pro data here.
         authService.signOut(false)
         setUser(null)
         setAccessToken(null)
@@ -124,12 +147,25 @@ export function useAuth() {
         return
       }
 
-      setUser(refreshed)
+      consecutiveFailuresRef.current = 0
+      setUser(result.user)
       const newAccessToken = authService.loadAccessToken()
       setAccessToken(newAccessToken)
       getFeaturesOrDefault(newAccessToken ?? undefined).then(f => {
         if (!cancelled) setFeatures(f)
       })
+    }
+
+    // Retries sooner than the next heartbeat, backing off so a sustained
+    // outage doesn't turn into a request every few seconds. The session is
+    // left intact throughout: the access token may lapse in the meantime, but
+    // apiClient recovers that on the next 401 as soon as the network is back.
+    function scheduleRetry() {
+      const attempt = ++consecutiveFailuresRef.current
+      const delay = Math.min(RETRY_BASE_MS * 2 ** (attempt - 1), RETRY_MAX_MS)
+      retryTimerRef.current = window.setTimeout(() => {
+        if (!cancelled) refresh()
+      }, delay)
     }
 
     if (skipNextHeartbeatRefreshRef.current) {
@@ -141,6 +177,9 @@ export function useAuth() {
     return () => {
       cancelled = true
       clearInterval(id)
+      // The backoff timer outlives the interval, so it needs clearing too or a
+      // sign-out leaves a pending retry that fires against a dead session.
+      if (retryTimerRef.current !== undefined) clearTimeout(retryTimerRef.current)
     }
   }, [isSignedIn])
 

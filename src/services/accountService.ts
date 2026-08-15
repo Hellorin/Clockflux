@@ -1,3 +1,16 @@
+import { apiFetch } from './apiClient'
+import { refreshAccessToken, loadAccessToken } from './authService'
+
+/**
+ * Obtains a fresh access token after a 401, reusing authService's single-flight
+ * refresh — refresh tokens are single-use and a second concurrent redemption is
+ * treated server-side as theft, so this must not start its own request.
+ */
+async function refreshForRetry(): Promise<string | null> {
+  const user = await refreshAccessToken()
+  return user ? loadAccessToken() : null
+}
+
 /**
  * Permanently deletes the signed-in user's account: the backend cancels any
  * active subscription, then erases their profile, cloud snapshot, settings
@@ -9,14 +22,11 @@
  * expected to surface a false result rather than proceed.
  */
 export async function deleteAccount(accessToken: string): Promise<boolean> {
-  try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/account`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${accessToken}` },
-      credentials: 'include',
-    })
-    return response.ok
-  } catch {
-    return false
-  }
+  const result = await apiFetch({
+    path: '/api/v1/account',
+    method: 'DELETE',
+    accessToken,
+    refreshToken: refreshForRetry,
+  })
+  return result.ok
 }

@@ -68,7 +68,8 @@ describe('requestExport', () => {
 })
 
 describe('downloadExportFile', () => {
-  it('creates and clicks a temporary anchor, then revokes the object URL', () => {
+  it('creates and clicks a temporary anchor, then revokes the object URL on a later tick', () => {
+    vi.useFakeTimers()
     const createObjectURL = vi.fn(() => 'blob:mock-url')
     const revokeObjectURL = vi.fn()
     vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL })
@@ -85,8 +86,16 @@ describe('downloadExportFile', () => {
     expect(anchor.href).toBe('blob:mock-url')
     expect(clickSpy).toHaveBeenCalled()
     expect(appendSpy).toHaveBeenCalledWith(anchor)
+
+    // Not yet: Firefox and several mobile browsers start the download
+    // asynchronously, so revoking in the same tick as the click can abort it or
+    // hand the user an empty file.
+    expect(revokeObjectURL).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(0)
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock-url')
 
+    vi.useRealTimers()
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })

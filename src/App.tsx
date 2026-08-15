@@ -64,7 +64,7 @@ export default function App() {
   // Settings round-trip through the server-validated /api/v1/settings
   // endpoint whenever signed in (see useAppSettings), which is what actually
   // enforces the Pro-only fields below against the caller's real plan.
-  const { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode, setDailyTargetHours, setHolidayCarryoverEnabled, setThemeLightColor, setThemeDarkColor, replaceSettings } = useAppSettings(accessToken, user?.email)
+  const { settings, settingsSaveFailed, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode, setDailyTargetHours, setHolidayCarryoverEnabled, setThemeLightColor, setThemeDarkColor, replaceSettings } = useAppSettings(accessToken, user?.email)
   const enabledViews = new Set(features.map(feature => feature.key))
   const syncEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('cloud-sync')
   const themesEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('themes')
@@ -381,6 +381,7 @@ export default function App() {
             showDailyTarget={dailyTargetEnabled}
             dailyTargetHours={settings.dailyTargetHours}
             onDailyTargetHoursChange={setDailyTargetHours}
+            settingsSaveFailed={settingsSaveFailed}
             showHolidayCarryover={holidayCarryoverFeatureEnabled}
             holidayCarryoverEnabled={settings.holidayCarryoverEnabled}
             onHolidayCarryoverEnabledChange={setHolidayCarryoverEnabled}

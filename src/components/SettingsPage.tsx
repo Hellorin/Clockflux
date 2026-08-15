@@ -33,6 +33,13 @@ interface SettingsPageProps {
   isSyncing?: boolean
   /** Set when the last sync attempt failed, so a silent failure isn't shown as a healthy "Last synced …". */
   syncError?: SyncError | null
+  /**
+   * True when the last settings save didn't reach the server. Distinct from
+   * syncError, which is about time-entry data: settings save on every change
+   * and used to fail completely silently, so a Pro user could set a theme or a
+   * daily target, see it apply locally, and find it gone on their next device.
+   */
+  settingsSaveFailed?: boolean
   onSyncNow?: () => void
   showThemes?: boolean
   themeLightColor?: string | null
@@ -76,7 +83,7 @@ interface SettingsPageProps {
   accountUrl?: string
 }
 
-export default function SettingsPage({ allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange, showSync = false, lastSyncedAt = null, isSyncing = false, syncError = null, onSyncNow, showThemes = false, themeLightColor = null, themeDarkColor = null, onThemeLightColorChange, onThemeDarkColorChange, onPreviewTheme, onPreviewThemeEnd, showDailyTarget = false, dailyTargetHours = 8, onDailyTargetHoursChange, showHolidayCarryover = false, holidayCarryoverEnabled = false, onHolidayCarryoverEnabledChange, showBilling = false, cancelAtPeriodEnd = false, currentPeriodEnd = null, subscriptionInterval = null, isCancellingSubscription = false, onCancelSubscription, showAccount = false, user = null, onSignIn, onSignOut, onDeleteAccount, isDeletingAccount = false, deleteAccountError = null, showUpgrade = false, accountUrl }: SettingsPageProps) {
+export default function SettingsPage({ allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange, showSync = false, lastSyncedAt = null, isSyncing = false, syncError = null, settingsSaveFailed = false, onSyncNow, showThemes = false, themeLightColor = null, themeDarkColor = null, onThemeLightColorChange, onThemeDarkColorChange, onPreviewTheme, onPreviewThemeEnd, showDailyTarget = false, dailyTargetHours = 8, onDailyTargetHoursChange, showHolidayCarryover = false, holidayCarryoverEnabled = false, onHolidayCarryoverEnabledChange, showBilling = false, cancelAtPeriodEnd = false, currentPeriodEnd = null, subscriptionInterval = null, isCancellingSubscription = false, onCancelSubscription, showAccount = false, user = null, onSignIn, onSignOut, onDeleteAccount, isDeletingAccount = false, deleteAccountError = null, showUpgrade = false, accountUrl }: SettingsPageProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const year = useMemo(() => new Date().getFullYear(), [])
@@ -85,6 +92,16 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
 
   return (
     <section className="settings-page">
+      {/* Settings save on every change, and that save used to fail in complete
+          silence — the local copy applied, the server never heard about it, and
+          nothing said so. A Pro user could pick a theme here, watch it take
+          effect, and find it absent on their next device. */}
+      {settingsSaveFailed && (
+        <p className="settings-note settings-note--error" role="alert">
+          Your latest settings change hasn’t reached your account yet — it’s saved on this device,
+          but other devices won’t see it until the next successful save.
+        </p>
+      )}
       {(showAccount || showBilling) && (
         <SettingsSection title="Account" collapsible={false}>
           {showAccount && (

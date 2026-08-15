@@ -43,6 +43,10 @@ function loadSettings(): Settings {
  */
 export function useAppSettings(accessToken?: string | null, ownerId?: string | null) {
   const [settings, setSettings] = useState(loadSettings)
+  // True when the last attempt to save settings to the server failed. Local
+  // storage always succeeds first, so the user's choice is never lost on this
+  // device — this only reports that it hasn't reached the account yet.
+  const [saveFailed, setSaveFailed] = useState(false)
   const accessTokenRef = useRef(accessToken)
   useEffect(() => {
     accessTokenRef.current = accessToken
@@ -81,10 +85,17 @@ export function useAppSettings(accessToken?: string | null, ownerId?: string | n
     if (!token) return
     const owner = ownerIdRef.current
     if (owner && localStorageOwnershipRepository.loadOwnerId() !== owner) return
-    putServerSettings(token, next).then(serverSettings => {
-      if (!serverSettings) return
-      setSettings(serverSettings)
-      settingsService.saveSettings(serverSettings)
+    putServerSettings(token, next).then(result => {
+      if (!result.ok) {
+        // Previously this simply returned, so a setting the user had just
+        // changed looked saved while the server never received it — no
+        // message, no indicator, nothing. Surfaced now so Settings can say so.
+        setSaveFailed(true)
+        return
+      }
+      setSaveFailed(false)
+      setSettings(result.settings)
+      settingsService.saveSettings(result.settings)
     })
   }, [])
 
@@ -162,5 +173,5 @@ export function useAppSettings(accessToken?: string | null, ownerId?: string | n
     setSettings(merged)
   }, [])
 
-  return { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode, setDailyTargetHours, setHolidayCarryoverEnabled, setThemeLightColor, setThemeDarkColor, replaceSettings }
+  return { settings, settingsSaveFailed: saveFailed, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode, setDailyTargetHours, setHolidayCarryoverEnabled, setThemeLightColor, setThemeDarkColor, replaceSettings }
 }

@@ -1,3 +1,5 @@
+import { apiFetch, apiFetchRaw } from './apiClient'
+import { refreshAccessToken, loadAccessToken } from './authService'
 import type { SyncData } from '../types'
 
 export interface SyncGetResponse {
@@ -35,23 +37,26 @@ function isSyncPutResponse(value: unknown): value is SyncPutResponse {
 }
 
 /**
+ * Obtains a fresh access token after a 401, reusing authService's single-flight
+ * refresh — refresh tokens are single-use and a second concurrent redemption is
+ * treated server-side as theft, so this must not start its own request.
+ */
+async function refreshForRetry(): Promise<string | null> {
+  const user = await refreshAccessToken()
+  return user ? loadAccessToken() : null
+}
+
+/**
  * Fetches the caller's synced data from /api/v1/sync (Pro plan only).
  * Returns null on any failure (offline, backend down, not Pro, etc.) so
  * callers can fall back to "never synced" rather than throwing.
  */
 export async function getSync(accessToken: string): Promise<SyncGetResponse | null> {
-  try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/sync`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      credentials: 'include',
-    })
-    if (!response.ok) return null
-    const data = await response.json()
-    if (!isSyncGetResponse(data)) return null
-    return data
-  } catch {
-    return null
-  }
+  const result = await apiFetch(
+    { path: '/api/v1/sync', accessToken, refreshToken: refreshForRetry },
+    isSyncGetResponse
+  )
+  return result.ok ? result.value : null
 }
 
 /**
@@ -86,26 +91,31 @@ export async function pushSync(
   data: SyncData,
   expectedLastSyncedAt: string | null
 ): Promise<PushSyncResult> {
+  const result = await apiFetchRaw({
+    path: '/api/v1/sync',
+    method: 'PUT',
+    body: { ...data, expectedLastSyncedAt },
+    accessToken,
+    refreshToken: refreshForRetry,
+    // 409 is not a failure here — it carries the server's current state, which
+    // the caller needs in order to reconcile.
+    okStatuses: [409],
+  })
+  if (!result.ok) return { status: 'failed' }
+
+  let body: unknown
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/sync`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-      credentials: 'include',
-      body: JSON.stringify({ ...data, expectedLastSyncedAt }),
-    })
-
-    if (response.status === 409) {
-      const body = await response.json()
-      // A 409 whose body we can't read is still a conflict — reporting it as a
-      // generic failure would have the caller retry the same losing push.
-      return isSyncGetResponse(body) ? { status: 'conflict', server: body } : { status: 'failed' }
-    }
-    if (!response.ok) return { status: 'failed' }
-
-    const body = await response.json()
-    if (!isSyncPutResponse(body)) return { status: 'failed' }
-    return { status: 'ok', lastSyncedAt: body.lastSyncedAt }
+    body = await result.value.json()
   } catch {
     return { status: 'failed' }
   }
+
+  if (result.status === 409) {
+    // A conflict whose body we can't read is still a conflict, but without the
+    // server state there is nothing to reconcile against — reporting a plain
+    // failure at least retries rather than "reconciling" against nothing.
+    return isSyncGetResponse(body) ? { status: 'conflict', server: body } : { status: 'failed' }
+  }
+  if (!isSyncPutResponse(body)) return { status: 'failed' }
+  return { status: 'ok', lastSyncedAt: body.lastSyncedAt }
 }
