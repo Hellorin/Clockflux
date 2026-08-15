@@ -499,4 +499,46 @@ describe('useSync', () => {
       )
     })
   })
+
+  // Exactly what a tester hit: sign in, upgrade to Pro, and sync reports
+  // failing even though the request was a 200. The server copy is empty for a
+  // brand-new subscriber, and the response for that case was being discarded —
+  // which then blocked the push too, because syncNow refuses to write while it
+  // has never managed to read the server.
+  describe('first sync after upgrading to Pro', () => {
+    const localDays = { '2026-08-01': [{ checkIn: '2026-08-01T09:00:00Z', checkOut: '2026-08-01T17:00:00Z' }] }
+
+    beforeEach(() => {
+      // The server holds nothing yet: a successful read reporting an empty
+      // account, which is not the same thing as a failed read.
+      vi.mocked(syncService.getSync).mockResolvedValue({
+        data: { days: {}, daysOff: {}, settings },
+        lastSyncedAt: null,
+      })
+    })
+
+    it('uploads the local history rather than reporting a failure', async () => {
+      const { result } = renderHook(() => useSync(baseArgs({ days: localDays })))
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+
+      expect(syncService.pushSync).toHaveBeenCalledWith(
+        'token-123',
+        { days: localDays, daysOff: {}, settings },
+        null
+      )
+      expect(result.current.syncError).toBeNull()
+    })
+
+    it('reports a clean state once the upload lands', async () => {
+      const { result } = renderHook(() => useSync(baseArgs({ days: localDays })))
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+
+      expect(result.current.syncError).toBeNull()
+      expect(result.current.lastSyncedAt).not.toBeNull()
+    })
+  })
 })

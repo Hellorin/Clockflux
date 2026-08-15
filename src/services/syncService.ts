@@ -11,17 +11,44 @@ export interface SyncPutResponse {
   lastSyncedAt: string
 }
 
+/**
+ * An entry map is optional on the wire.
+ *
+ * A user with nothing stored server-side legitimately has no entries, and a Go
+ * nil map marshals to JSON `null` rather than `{}` — so `null` here means
+ * "empty", not "malformed". Rejecting it meant a newly-upgraded Pro user's
+ * first pull returned a perfectly good 200 that the client discarded, and sync
+ * never started. The backend now sends `{}`, but this stays tolerant: stored
+ * documents written by older builds still contain nulls, and a client that
+ * refuses to read its own history is the worse failure.
+ *
+ * An array is still rejected — `typeof [] === 'object'` would otherwise sneak
+ * one through as a map.
+ */
+function isOptionalEntryMap(value: unknown): boolean {
+  if (value === null || value === undefined) return true
+  return typeof value === 'object' && !Array.isArray(value)
+}
+
 function isSyncData(value: unknown): value is SyncData {
   if (!value || typeof value !== 'object') return false
   const candidate = value as Partial<SyncData>
   return (
-    typeof candidate.days === 'object' &&
-    candidate.days !== null &&
-    typeof candidate.daysOff === 'object' &&
-    candidate.daysOff !== null &&
+    isOptionalEntryMap(candidate.days) &&
+    isOptionalEntryMap(candidate.daysOff) &&
     typeof candidate.settings === 'object' &&
     candidate.settings !== null
   )
+}
+
+/**
+ * Fills in the maps the guard above allows to be absent, so nothing downstream
+ * ever has to null-check them — `SyncData` says they are objects, and every
+ * consumer (useSync's JSON.stringify comparison, onRestore, replaceAll) assumes
+ * exactly that.
+ */
+function normalizeSyncData(data: SyncData): SyncData {
+  return { ...data, days: data.days ?? {}, daysOff: data.daysOff ?? {} }
 }
 
 function isSyncGetResponse(value: unknown): value is SyncGetResponse {
@@ -56,7 +83,8 @@ export async function getSync(accessToken: string): Promise<SyncGetResponse | nu
     { path: '/api/v1/sync', accessToken, refreshToken: refreshForRetry },
     isSyncGetResponse
   )
-  return result.ok ? result.value : null
+  if (!result.ok) return null
+  return { ...result.value, data: normalizeSyncData(result.value.data) }
 }
 
 /**
@@ -114,7 +142,9 @@ export async function pushSync(
     // A conflict whose body we can't read is still a conflict, but without the
     // server state there is nothing to reconcile against — reporting a plain
     // failure at least retries rather than "reconciling" against nothing.
-    return isSyncGetResponse(body) ? { status: 'conflict', server: body } : { status: 'failed' }
+    return isSyncGetResponse(body)
+      ? { status: 'conflict', server: { ...body, data: normalizeSyncData(body.data) } }
+      : { status: 'failed' }
   }
   if (!isSyncPutResponse(body)) return { status: 'failed' }
   return { status: 'ok', lastSyncedAt: body.lastSyncedAt }
