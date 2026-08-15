@@ -51,7 +51,7 @@ interface UseSyncArgs {
  * had actually reached the server. For a paid feature whose whole promise is
  * "your data is safe across devices", that silence is the bug.
  */
-export type SyncError = 'push' | 'pull'
+export type SyncError = 'push' | 'pull' | 'conflict'
 
 export function useSync({ enabled, days, daysOff, settings, onRestore }: UseSyncArgs) {
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null)
@@ -60,6 +60,20 @@ export function useSync({ enabled, days, daysOff, settings, onRestore }: UseSync
 
   const isSyncingRef = useRef(false)
   const baselineRef = useRef<string | null>(null)
+  // The server version this device's baseline corresponds to, sent as the push
+  // precondition. Three distinct states, and conflating them is how data gets
+  // lost:
+  //   undefined — never successfully read the server. Pushing unconditionally
+  //               here would blindly overwrite whatever is actually stored,
+  //               which is the very thing the precondition exists to prevent,
+  //               so syncNow re-reads first.
+  //   null      — the server confirmed it holds nothing for this user, so an
+  //               unconditional first write is correct.
+  //   string    — a known version to make the write conditional on.
+  //
+  // A ref rather than state because syncNow reads it at call time from inside
+  // timers and event handlers, where a captured state value would be stale.
+  const serverVersionRef = useRef<string | null | undefined>(undefined)
   const latestDataRef = useRef<SyncData>({ days, daysOff, settings })
   latestDataRef.current = { days, daysOff, settings }
 
@@ -91,19 +105,55 @@ export function useSync({ enabled, days, daysOff, settings, onRestore }: UseSync
     isSyncingRef.current = true
     setIsSyncing(true)
     try {
-      const result = await pushSync(accessToken, payload)
-      if (!result) {
+      // The initial pull failed (or hasn't happened), so this device has no
+      // idea what the server holds. Read it before writing rather than pushing
+      // unconditionally over it — the hourly heartbeat and the change debounce
+      // both land here, so without this a device that merely failed its first
+      // pull would still clobber every other device.
+      if (serverVersionRef.current === undefined) {
+        const current = await getSync(accessToken)
+        if (!current) {
+          setSyncError('pull')
+          return false
+        }
+        serverVersionRef.current = current.lastSyncedAt
+      }
+
+      const result = await pushSync(accessToken, payload, serverVersionRef.current)
+
+      if (result.status === 'conflict') {
+        // Another device wrote since this one last read. Previously there was
+        // no way to find this out — the push simply won and destroyed their
+        // work. Adopt the server's copy, which is the same rule the
+        // reconcile-on-enable effect below applies when only the server has
+        // changed, and report it so the UI doesn't claim a clean sync.
+        onRestore(result.server.data)
+        serverVersionRef.current = result.server.lastSyncedAt
+        setBaseline(JSON.stringify(result.server.data))
+        if (result.server.lastSyncedAt) setLastSyncedAt(new Date(result.server.lastSyncedAt))
+        setSyncError('conflict')
+        return false
+      }
+
+      if (result.status === 'failed') {
         setSyncError('push')
         return false
       }
+
       setSyncError(null)
       setBaseline(payloadSnapshot)
+      serverVersionRef.current = result.lastSyncedAt
       setLastSyncedAt(new Date(result.lastSyncedAt))
       return true
     } finally {
       isSyncingRef.current = false
       setIsSyncing(false)
     }
+    // onRestore is intentionally read from the closure rather than declared as
+    // a dependency, matching how this hook already treats it in the reconcile
+    // effect below — App passes a fresh arrow function on every render, so
+    // depending on it would rebuild syncNow constantly and reset every timer.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Runs once per "enabled" transition: loads the persisted baseline, pulls
@@ -125,6 +175,12 @@ export function useSync({ enabled, days, daysOff, settings, onRestore }: UseSync
       // tell whether the server has newer data, so it quietly does nothing.
       setSyncError(result ? null : 'pull')
       if (result?.lastSyncedAt) setLastSyncedAt(new Date(result.lastSyncedAt))
+      // Records the version every later push is conditional on — but only on a
+      // successful read. `result?.lastSyncedAt ?? null` would collapse a failed
+      // pull into "the server holds nothing", and the next heartbeat would then
+      // push unconditionally over data it never managed to read. Left as
+      // undefined, syncNow re-reads before writing instead.
+      if (result) serverVersionRef.current = result.lastSyncedAt
 
       const baseline = baselineRef.current ?? emptyBaseline(latestDataRef.current.settings)
       const serverData = result?.data ?? { days: {}, daysOff: {}, settings: latestDataRef.current.settings }

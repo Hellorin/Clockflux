@@ -83,6 +83,18 @@ describe('writes when storage is full', () => {
 })
 
 describe('check-in with storage full', () => {
+  // The clock is pinned because checkIn legitimately refuses on a weekend, so
+  // without this the test passes Monday to Friday and fails at the weekend —
+  // which is exactly what it did the first time a run crossed into a Saturday.
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 7, 12, 9, 0, 0)) // Wednesday
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('still records the session in memory instead of crashing', () => {
     throwOnWrite(QUOTA_ERROR)
     const empty: TimeEntriesData = { days: {}, daysOff: {} }

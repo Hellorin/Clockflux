@@ -15,6 +15,10 @@ import type { AuthUser, HolidayAccrualMode } from '../types'
 const SYNC_ERROR_LABEL: Record<SyncError, string> = {
   push: 'Last sync failed',
   pull: 'Couldn’t check for updates',
+  // Not a failure so much as a resolution: another device had newer data and
+  // this one adopted it. Worth saying out loud, because the alternative — what
+  // used to happen — was silently overwriting that device's work.
+  conflict: 'Updated from another device',
 }
 
 interface SettingsPageProps {
@@ -272,7 +276,9 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
             <p className="settings-note settings-note--error" role="alert">
               {syncError === 'push'
                 ? 'Your latest changes are still only on this device. They’ll be sent again automatically — or press the button above to retry now.'
-                : 'We couldn’t reach the server, so changes made on your other devices may be missing here. Press the button above to retry.'}
+                : syncError === 'conflict'
+                  ? 'Another device had newer data, so this device has been brought up to date with it. Any edit you made here that wasn’t saved yet may need redoing.'
+                  : 'We couldn’t reach the server, so changes made on your other devices may be missing here. Press the button above to retry.'}
             </p>
           )}
         </SettingsSection>
