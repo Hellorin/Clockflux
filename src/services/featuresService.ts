@@ -21,7 +21,15 @@ export const DEFAULT_FEATURES: Feature[] = [
 function isFeaturesResponse(value: unknown): value is FeaturesResponse {
   if (!value || typeof value !== 'object') return false
   const candidate = value as Partial<FeaturesResponse>
-  return typeof candidate.authenticated === 'boolean' && Array.isArray(candidate.features)
+  // features may be absent or null: a nil Go slice marshals to JSON null
+  // rather than [], which is the same trap that broke sync and sign-in. The
+  // backend builds a non-nil slice today and a test pins that, but the cost of
+  // tolerating it here is one clause, and the cost of not tolerating it is the
+  // app silently falling back to DEFAULT_FEATURES for every user.
+  return (
+    typeof candidate.authenticated === 'boolean' &&
+    (candidate.features === null || candidate.features === undefined || Array.isArray(candidate.features))
+  )
 }
 
 /**
@@ -45,5 +53,5 @@ export async function getFeatures(accessToken?: string): Promise<FeaturesRespons
 export async function getFeaturesOrDefault(accessToken?: string): Promise<Feature[]> {
   const response = await getFeatures(accessToken)
   if (!response) return DEFAULT_FEATURES
-  return response.features.map(key => ({ key, authenticated: response.authenticated }))
+  return (response.features ?? []).map(key => ({ key, authenticated: response.authenticated }))
 }

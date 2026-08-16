@@ -27,7 +27,14 @@ function isAuthResponse(value: unknown): value is AuthResponse {
 // backend always sends but a user cached in localStorage before this field
 // existed won't have.
 function normalizeAuthUser(user: AuthUser): AuthUser {
-  return { ...user, cancelAtPeriodEnd: user.cancelAtPeriodEnd === true }
+  return {
+    ...user,
+    cancelAtPeriodEnd: user.cancelAtPeriodEnd === true,
+    // isAuthUser accepts an absent picture — a Google account with no profile
+    // photo genuinely has none — so give downstream a string rather than
+    // making every consumer null-check a field the type says is required.
+    picture: user.picture ?? '',
+  }
 }
 
 export function loadUser(): AuthUser | null {
