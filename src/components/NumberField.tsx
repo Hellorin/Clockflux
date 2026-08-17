@@ -8,6 +8,8 @@ interface NumberFieldProps {
   inputMode?: 'numeric' | 'decimal'
   className?: string
   'aria-label': string
+  /** Lets a wrapping <label htmlFor> bind to this field explicitly. */
+  id?: string
 }
 
 /**
@@ -41,6 +43,7 @@ export default function NumberField({
   inputMode = 'decimal',
   className,
   'aria-label': ariaLabel,
+  id,
 }: NumberFieldProps) {
   const [draft, setDraft] = useState<string | null>(null)
 
@@ -52,6 +55,7 @@ export default function NumberField({
 
   return (
     <input
+      id={id}
       type="text"
       inputMode={inputMode}
       className={className}

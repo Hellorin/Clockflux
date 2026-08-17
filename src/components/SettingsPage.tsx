@@ -184,10 +184,11 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
             </button>
           </div>
         </div>
-        <label className="settings-field">
+        <label className="settings-field" htmlFor="settings-annual-allowance">
           <span className="settings-field-label">Annual allowance</span>
           <span className="settings-field-control">
             <NumberField
+                id="settings-annual-allowance"
                 inputMode="numeric"
                 className="settings-field-input"
                 value={allowance}
@@ -336,10 +337,11 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
           title={<><span className="settings-sync-star" aria-hidden="true">✦</span> Daily target</>}
           summary={`Pro feature — ${PRO_FEATURES.find(f => f.key === 'custom-daily-target')!.description}`}
         >
-          <label className="settings-field">
+          <label className="settings-field" htmlFor="settings-daily-target-hours">
             <span className="settings-field-label">Hours per day</span>
             <span className="settings-field-control">
               <NumberField
+                  id="settings-daily-target-hours"
                   inputMode="decimal"
                   className="settings-field-input"
                   value={dailyTargetHours}

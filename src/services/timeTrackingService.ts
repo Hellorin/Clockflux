@@ -72,7 +72,7 @@ export interface OpenSession {
  * regardless of which day it was opened on.
  */
 export function findOpenSession(days: TimeEntriesData['days']): OpenSession | null {
-  const keys = Object.keys(days).sort()
+  const keys = Object.keys(days).sort((a, b) => a.localeCompare(b))
   for (let i = keys.length - 1; i >= 0; i--) {
     const dateKey = keys[i]
     const sessions = days[dateKey]
