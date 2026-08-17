@@ -12,13 +12,21 @@ on:
 jobs:
   sonarqube:
     runs-on: ubuntu-latest
+    # Dependabot PRs run with a read-only token and no access to repository
+    # secrets (a GitHub security restriction, not something a workflow
+    # change can override), so SONAR_TOKEN is unavailable here and the scan
+    # would always fail with "Not authorized". Skip it for those PRs; the
+    # push-to-main trigger still analyzes the code once it merges. To get
+    # SonarQube on dependabot PRs, add SONAR_TOKEN as a Dependabot secret
+    # (Settings > Secrets and variables > Dependabot) instead of skipping.
+    if: github.actor != 'dependabot[bot]'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -30,6 +38,6 @@ jobs:
         run: npm run test:coverage
 
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v6
+        uses: SonarSource/sonarqube-scan-action@v8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
