@@ -1,4 +1,5 @@
 import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/react"
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { useTimeTracker } from './hooks/useTimeTracker'
 import { useAppSettings } from './hooks/useAppSettings'
@@ -484,6 +485,7 @@ export default function App() {
       <InstallPrompt />
     </div>
     <Analytics />
+    <SpeedInsights/>
     </>
   )
 }
