@@ -1,3 +1,4 @@
+import { guardedWrite } from '../utils/storageHealth'
 import type { TimeEntriesData } from '../types'
 import type { TimeEntriesRepository } from './types'
 
@@ -14,7 +15,14 @@ export const localStorageTimeEntriesRepository: TimeEntriesRepository = {
       return null
     }
   },
+  // This is the write on the check-in/check-out path, and it was the only
+  // unguarded one that could take the whole app down: timeTrackingService
+  // calls it from inside a setData updater, i.e. during React's render phase,
+  // so a QuotaExceededError propagated straight to the ErrorBoundary. Tapping
+  // check-in white-screened the app — and the crash screen then reassured the
+  // user their hours were still saved on this device, which is precisely what
+  // had just failed.
   save(data: TimeEntriesData): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+    guardedWrite(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(data)))
   },
 }

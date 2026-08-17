@@ -24,7 +24,17 @@ export function closeStaleSessions(data: TimeEntriesData, todayKey: string): Tim
     const [y, m, d] = dateKey.split('-').map(Number)
     const cutoff = new Date(y, m - 1, d, AUTO_CHECKOUT_HOUR, 0, 0, 0).getTime()
     const checkInMs = new Date(last.checkIn).getTime()
-    const checkOutMs = Math.max(checkInMs, cutoff)
+
+    // `Math.max(checkInMs, cutoff)` alone produced a session of exactly zero
+    // milliseconds for any check-in after the cutoff hour: a shift started at
+    // 22:00 got a checkout of 22:00, so a whole night's work was silently
+    // recorded as no work at all. Falling back to the end of the check-in day
+    // is still an estimate, but it errs towards preserving the shift rather
+    // than deleting it, and autoCheckedOut below marks it for the user to
+    // correct. (The common cross-midnight case no longer reaches here at all —
+    // checkOut() now closes a session started on a previous day.)
+    const endOfDay = new Date(y, m - 1, d, 23, 59, 59, 999).getTime()
+    const checkOutMs = checkInMs >= cutoff ? Math.max(checkInMs, endOfDay) : cutoff
 
     if (!nextDays) nextDays = { ...data.days }
     const updated = sessions.slice()

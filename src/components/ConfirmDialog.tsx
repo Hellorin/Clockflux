@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from 'react'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 
 interface ConfirmDialogProps {
   title: string
@@ -20,6 +21,10 @@ export default function ConfirmDialog({ title, message, confirmLabel = 'Confirm'
     if (e.key === 'Escape') onCancel()
   }, [onCancel])
 
+  // Confines Tab to the dialog and restores focus on close — it declared
+  // aria-modal="true" but Tab walked straight out into the page behind.
+  const dialogRef = useFocusTrap<HTMLDivElement>()
+
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
@@ -28,7 +33,7 @@ export default function ConfirmDialog({ title, message, confirmLabel = 'Confirm'
   return (
     <div className="modal-backdrop">
       <button type="button" className="modal-backdrop__scrim" onClick={onCancel} aria-label="Close dialog" />
-      <div className="modal" role="alertdialog" aria-modal="true" aria-label={title}>
+      <div ref={dialogRef} className="modal" role="alertdialog" aria-modal="true" aria-label={title}>
         <div className="modal-header">
           <span className="modal-title">{title}</span>
           <button type="button" className="modal-close-btn" onClick={onCancel} aria-label="Close">×</button>

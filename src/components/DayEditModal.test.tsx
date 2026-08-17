@@ -78,16 +78,32 @@ describe('DayEditModal', () => {
     expect(sessions[0].checkOut).toBe(new Date(2024, 0, 10, 12, 0).toISOString())
   })
 
-  it('filters out rows with an empty check-in on save', () => {
+  it('filters out fully cleared rows on save', () => {
     const onSave = vi.fn()
     render(
       <DayEditModal dateKey="2024-01-10" sessions={[]} onSave={onSave} onClose={() => {}} onSetDayOffType={() => {}} />
     )
-    const checkIns = screen.getAllByLabelText('Check-in time')
-    fireEvent.change(checkIns[1], { target: { value: '' } })
+    // Clearing *both* times is an unambiguous "remove this row", so it still
+    // saves silently — only a half-filled row is treated as a mistake.
+    fireEvent.change(screen.getAllByLabelText('Check-in time')[1], { target: { value: '' } })
+    fireEvent.change(screen.getAllByLabelText('Check-out time')[1], { target: { value: '' } })
     fireEvent.click(screen.getByText('Save'))
     const [, sessions] = onSave.mock.calls[0]
     expect(sessions).toHaveLength(1)
+  })
+
+  it('refuses to save a check-out with no check-in instead of dropping it', () => {
+    const onSave = vi.fn()
+    render(
+      <DayEditModal dateKey="2024-01-10" sessions={[]} onSave={onSave} onClose={() => {}} onSetDayOffType={() => {}} />
+    )
+    // This used to be filtered out on save, so the user watched the modal close
+    // believing the session had been recorded when it had simply been discarded.
+    fireEvent.change(screen.getAllByLabelText('Check-in time')[1], { target: { value: '' } })
+    fireEvent.click(screen.getByText('Save'))
+
+    expect(onSave).not.toHaveBeenCalled()
+    expect(screen.getByRole('alert')).toHaveTextContent('Every session needs a check-in time.')
   })
 
   it('renders a static "Weekend" marker and dims sessions for weekend dates', () => {
@@ -148,5 +164,86 @@ describe('DayEditModal', () => {
     )
     expect(container.querySelector('.modal-sessions--dimmed')).toBeNull()
     expect(screen.getByText('+ Add Session')).not.toBeDisabled()
+  })
+
+  // handleSave used to do no validation whatsoever, so this whole group of
+  // inputs was accepted and quietly produced wrong totals.
+  describe('validation', () => {
+    function renderWithOneRow(checkIn: string, checkOut: string, onSave = vi.fn()) {
+      render(
+        <DayEditModal
+          dateKey="2024-01-10"
+          sessions={[{ checkIn: new Date(2024, 0, 10, 9, 0).toISOString(), checkOut: new Date(2024, 0, 10, 17, 0).toISOString() }]}
+          onSave={onSave}
+          onClose={() => {}}
+          onSetDayOffType={() => {}}
+        />
+      )
+      fireEvent.change(screen.getByLabelText('Check-in time'), { target: { value: checkIn } })
+      fireEvent.change(screen.getByLabelText('Check-out time'), { target: { value: checkOut } })
+      return onSave
+    }
+
+    it('records an overnight shift instead of silently totalling 0h', () => {
+      // Both ends used to be pinned to the edited date, so 23:00 -> 01:00 was a
+      // negative span that sumSessionsMs clamped to zero. A night shift was
+      // structurally impossible to enter.
+      const onSave = renderWithOneRow('23:00', '01:00')
+      fireEvent.click(screen.getByText('Save'))
+
+      const [, sessions] = onSave.mock.calls[0]
+      expect(sessions[0].checkIn).toBe(new Date(2024, 0, 10, 23, 0).toISOString())
+      expect(sessions[0].checkOut).toBe(new Date(2024, 0, 11, 1, 0).toISOString())
+    })
+
+    it('shows the computed duration and a next-day marker while editing', () => {
+      renderWithOneRow('23:00', '01:00')
+      expect(screen.getByText('+1d')).toBeInTheDocument()
+      expect(screen.getByText('2h')).toBeInTheDocument()
+    })
+
+    it('shows the duration for an ordinary same-day session', () => {
+      renderWithOneRow('09:00', '17:30')
+      expect(screen.queryByText('+1d')).toBeNull()
+      expect(screen.getByText('8h 30m')).toBeInTheDocument()
+    })
+
+    it('blocks overlapping sessions rather than double-counting them', () => {
+      const onSave = vi.fn()
+      render(
+        <DayEditModal dateKey="2024-01-10" sessions={[]} onSave={onSave} onClose={() => {}} onSetDayOffType={() => {}} />
+      )
+      // Defaults are 08:00-12:00 and 13:00-17:00; drag the second back over the first.
+      fireEvent.change(screen.getAllByLabelText('Check-in time')[1], { target: { value: '11:00' } })
+      fireEvent.click(screen.getByText('Save'))
+
+      expect(onSave).not.toHaveBeenCalled()
+      expect(screen.getByRole('alert')).toHaveTextContent('Sessions overlap')
+    })
+
+    it('blocks more than one running session', () => {
+      const onSave = vi.fn()
+      render(
+        <DayEditModal dateKey="2024-01-10" sessions={[]} onSave={onSave} onClose={() => {}} onSetDayOffType={() => {}} />
+      )
+      fireEvent.change(screen.getAllByLabelText('Check-out time')[0], { target: { value: '' } })
+      fireEvent.change(screen.getAllByLabelText('Check-out time')[1], { target: { value: '' } })
+      fireEvent.click(screen.getByText('Save'))
+
+      expect(onSave).not.toHaveBeenCalled()
+      expect(screen.getByRole('alert')).toHaveTextContent('Only one session can be left running.')
+    })
+
+    it('disables Save while the entry is invalid', () => {
+      renderWithOneRow('', '17:00')
+      expect(screen.getByText('Save')).toBeDisabled()
+    })
+
+    it('still saves a valid day with no error shown', () => {
+      const onSave = renderWithOneRow('09:00', '17:00')
+      expect(screen.queryByRole('alert')).toBeNull()
+      fireEvent.click(screen.getByText('Save'))
+      expect(onSave).toHaveBeenCalled()
+    })
   })
 })

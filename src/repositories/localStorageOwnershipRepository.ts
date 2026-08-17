@@ -1,3 +1,4 @@
+import { guardedWrite } from '../utils/storageHealth'
 import type { Settings, TimeEntriesData } from '../types'
 import type { OwnershipRepository } from './types'
 
@@ -18,8 +19,11 @@ function loadBackups(): BackupsById {
   }
 }
 
+// Holds every past owner's set-aside data, so an unguarded throw here would
+// crash the sign-in flow at exactly the moment a second account is taking over
+// the device — the one moment the previous owner's data is most at risk.
 function saveBackups(backups: BackupsById): void {
-  localStorage.setItem(BACKUPS_STORAGE_KEY, JSON.stringify(backups))
+  guardedWrite(() => localStorage.setItem(BACKUPS_STORAGE_KEY, JSON.stringify(backups)))
 }
 
 export const localStorageOwnershipRepository: OwnershipRepository = {
@@ -31,7 +35,7 @@ export const localStorageOwnershipRepository: OwnershipRepository = {
     }
   },
   saveOwnerId(ownerId: string): void {
-    localStorage.setItem(OWNER_STORAGE_KEY, ownerId)
+    guardedWrite(() => localStorage.setItem(OWNER_STORAGE_KEY, ownerId))
   },
   // All owners' set-aside snapshots live under one key rather than one key
   // per owner, so the app's storage footprint stays fixed and enumerable

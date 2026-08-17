@@ -5,18 +5,32 @@ import type { Milestone } from '../hooks/useTimeTracker'
 interface CelebrationOverlayProps {
   milestone: Milestone | null
   onDismiss: () => void
+  /** The user's own target, so the message doesn't claim 8 hours to someone on 6. */
+  dailyTargetHours?: number
 }
 
-const MESSAGES: Record<Milestone, { icon: string, title: string, sub: string }> = {
-  daily:  { icon: '🎯', title: 'Daily goal smashed!',    sub: "You've hit 8 hours today." },
-  weekly: { icon: '🏆', title: 'Weekly target reached!', sub: "You've hit your prorated weekly target." },
+function messagesFor(dailyTargetHours: number): Record<Milestone, { icon: string, title: string, sub: string }> {
+  const hours = Number.isInteger(dailyTargetHours) ? dailyTargetHours : dailyTargetHours.toFixed(1)
+  return {
+    daily: { icon: '🎯', title: 'Daily goal smashed!', sub: `You've hit ${hours} hours today.` },
+    weekly: { icon: '🏆', title: 'Weekly target reached!', sub: "You've hit your prorated weekly target." },
+  }
 }
 
-export default function CelebrationOverlay({ milestone, onDismiss }: CelebrationOverlayProps) {
+export default function CelebrationOverlay({ milestone, onDismiss, dailyTargetHours = 8 }: CelebrationOverlayProps) {
   const firedRef = useRef(false)
 
   useEffect(() => {
-    if (!milestone || firedRef.current) return
+    // Reset when the overlay closes. firedRef was previously set once and never
+    // cleared, so the *second* milestone of a session early-returned here —
+    // meaning no confetti, and, worse, no setTimeout(onDismiss) either, leaving
+    // celebrationMilestone non-null indefinitely. Hit your daily goal on Monday
+    // and nothing ever celebrated again until a reload.
+    if (!milestone) {
+      firedRef.current = false
+      return
+    }
+    if (firedRef.current) return
     firedRef.current = true
 
     if (milestone === 'weekly') {
@@ -32,7 +46,7 @@ export default function CelebrationOverlay({ milestone, onDismiss }: Celebration
 
   if (!milestone) return null
 
-  const { icon, title, sub } = MESSAGES[milestone]
+  const { icon, title, sub } = messagesFor(dailyTargetHours)[milestone]
 
   return (
     <div className="celebration-overlay" role="status" aria-live="polite">

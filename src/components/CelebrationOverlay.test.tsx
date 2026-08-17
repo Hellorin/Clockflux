@@ -42,4 +42,37 @@ describe('CelebrationOverlay', () => {
     rerender(<CelebrationOverlay milestone="daily" onDismiss={() => {}} />)
     expect(confetti).toHaveBeenCalledTimes(1)
   })
+
+  // firedRef was set once and never cleared, so the second milestone of a
+  // session early-returned: no confetti, and no setTimeout(onDismiss) either,
+  // which left celebrationMilestone non-null indefinitely.
+  it('fires again for a later milestone in the same session', () => {
+    const { rerender } = render(<CelebrationOverlay milestone="daily" onDismiss={() => {}} />)
+    expect(confetti).toHaveBeenCalledTimes(1)
+
+    // Closed, then a new milestone arrives.
+    rerender(<CelebrationOverlay milestone={null} onDismiss={() => {}} />)
+    rerender(<CelebrationOverlay milestone="weekly" onDismiss={() => {}} />)
+
+    expect(confetti).toHaveBeenCalledTimes(3) // weekly fires two bursts
+  })
+
+  it('schedules a dismiss for that later milestone too', () => {
+    vi.useFakeTimers()
+    const onDismiss = vi.fn()
+
+    const { rerender } = render(<CelebrationOverlay milestone="daily" onDismiss={onDismiss} />)
+    rerender(<CelebrationOverlay milestone={null} onDismiss={onDismiss} />)
+    onDismiss.mockClear()
+    rerender(<CelebrationOverlay milestone="daily" onDismiss={onDismiss} />)
+
+    vi.advanceTimersByTime(3000)
+    expect(onDismiss).toHaveBeenCalled()
+    vi.useRealTimers()
+  })
+
+  it("states the user's own daily target rather than a fixed 8 hours", () => {
+    render(<CelebrationOverlay milestone="daily" onDismiss={() => {}} dailyTargetHours={6} />)
+    expect(screen.getByText("You've hit 6 hours today.")).toBeInTheDocument()
+  })
 })

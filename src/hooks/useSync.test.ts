@@ -22,8 +22,18 @@ describe('useSync', () => {
   beforeEach(() => {
     localStorage.clear()
     vi.mocked(authService.loadAccessToken).mockReturnValue('token-123')
-    vi.mocked(syncService.getSync).mockResolvedValue(null)
-    vi.mocked(syncService.pushSync).mockResolvedValue({ lastSyncedAt: '2026-08-11T10:00:00Z' })
+    // "Signed in, Pro, but has never synced from any device." Note this is
+    // NOT null: getSync returns null only on *failure*, whereas the backend
+    // answers 200 with empty data for a user with nothing stored (see the
+    // comment on the reconcile effect in useSync.ts). The default used to be
+    // null, which meant every test that expected a push was quietly asserting
+    // that a device pushes even when it could not read the server — the exact
+    // behaviour that made a failed pull clobber other devices.
+    vi.mocked(syncService.getSync).mockResolvedValue({
+      data: { days: {}, daysOff: {}, settings },
+      lastSyncedAt: null,
+    })
+    vi.mocked(syncService.pushSync).mockResolvedValue({ status: 'ok', lastSyncedAt: '2026-08-11T10:00:00Z' })
     vi.useFakeTimers()
   })
 
@@ -87,7 +97,13 @@ describe('useSync', () => {
     })
 
     expect(onRestore).not.toHaveBeenCalled()
-    expect(syncService.pushSync).toHaveBeenCalledWith('token-123', { days: localDays, daysOff: {}, settings })
+    // Conditional on the version just pulled: a push that isn't would go back
+    // to blindly overwriting whatever another device wrote in the meantime.
+    expect(syncService.pushSync).toHaveBeenCalledWith(
+      'token-123',
+      { days: localDays, daysOff: {}, settings },
+      '2026-08-11T09:00:00Z'
+    )
   })
 
   it('does not push on a fresh mount/reload when nothing has changed since the last known sync', async () => {
@@ -134,7 +150,12 @@ describe('useSync', () => {
 
   it('uploads pre-existing local history on the very first sync (e.g. free -> Pro upgrade)', async () => {
     const localDays = { '2026-08-01': [{ checkIn: '2026-08-01T09:00:00Z', checkOut: '2026-08-01T17:00:00Z' }] }
-    vi.mocked(syncService.getSync).mockResolvedValue(null)
+    // The very first sync: the server holds nothing for this user yet, so
+    // the initial pull succeeds and reports lastSyncedAt: null.
+    vi.mocked(syncService.getSync).mockResolvedValue({
+      data: { days: {}, daysOff: {}, settings },
+      lastSyncedAt: null,
+    })
 
     renderHook(() => useSync(baseArgs({ days: localDays })))
 
@@ -142,7 +163,7 @@ describe('useSync', () => {
       await Promise.resolve()
     })
 
-    expect(syncService.pushSync).toHaveBeenCalledWith('token-123', { days: localDays, daysOff: {}, settings })
+    expect(syncService.pushSync).toHaveBeenCalledWith('token-123', { days: localDays, daysOff: {}, settings }, null)
   })
 
   it('syncs almost immediately after a check-in/check-out (a days change)', async () => {
@@ -161,11 +182,17 @@ describe('useSync', () => {
       await vi.advanceTimersByTimeAsync(ENTRY_DEBOUNCE_MS)
     })
 
-    expect(syncService.pushSync).toHaveBeenCalledWith('token-123', {
-      days: { '2026-08-11': [{ checkIn: '2026-08-11T09:00:00Z', checkOut: null }] },
-      daysOff: {},
-      settings,
-    })
+    expect(syncService.pushSync).toHaveBeenCalledWith(
+      'token-123',
+      {
+        days: { '2026-08-11': [{ checkIn: '2026-08-11T09:00:00Z', checkOut: null }] },
+        daysOff: {},
+        settings,
+      },
+      // Unconditional: this user has never synced, so there is no version to
+      // be conditional on.
+      null
+    )
   })
 
   it('syncs almost immediately after a day-off is added (a daysOff change)', async () => {
@@ -183,7 +210,7 @@ describe('useSync', () => {
       await vi.advanceTimersByTimeAsync(ENTRY_DEBOUNCE_MS)
     })
 
-    expect(syncService.pushSync).toHaveBeenCalledWith('token-123', { days: {}, daysOff: { '2026-08-11': 'personal' }, settings })
+    expect(syncService.pushSync).toHaveBeenCalledWith('token-123', { days: {}, daysOff: { '2026-08-11': 'personal' }, settings }, null)
   })
 
   it('waits longer before syncing a settings-only change than an entries change', async () => {
@@ -207,7 +234,7 @@ describe('useSync', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(SETTINGS_DEBOUNCE_MS)
     })
-    expect(syncService.pushSync).toHaveBeenCalledWith('token-123', { days: {}, daysOff: {}, settings: { ...settings, annualHolidayAllowance: 30 } })
+    expect(syncService.pushSync).toHaveBeenCalledWith('token-123', { days: {}, daysOff: {}, settings: { ...settings, annualHolidayAllowance: 30 } }, null)
   })
 
   it('syncs on the hourly heartbeat when a change was made', async () => {
@@ -250,7 +277,7 @@ describe('useSync', () => {
   })
 
   it('sets isSyncing while a push is in flight', async () => {
-    let resolvePush!: (value: { lastSyncedAt: string }) => void
+    let resolvePush!: (value: syncService.PushSyncResult) => void
     vi.mocked(syncService.pushSync).mockReturnValue(new Promise(resolve => { resolvePush = resolve }))
 
     const { result } = renderHook(() => useSync(baseArgs()))
@@ -262,14 +289,14 @@ describe('useSync', () => {
     expect(result.current.isSyncing).toBe(true)
 
     await act(async () => {
-      resolvePush({ lastSyncedAt: '2026-08-11T10:00:00Z' })
+      resolvePush({ status: 'ok', lastSyncedAt: '2026-08-11T10:00:00Z' })
       await syncPromise
     })
     expect(result.current.isSyncing).toBe(false)
   })
 
   it('syncNow resolves false and leaves data dirty when the push fails (e.g. offline)', async () => {
-    vi.mocked(syncService.pushSync).mockResolvedValue(null)
+    vi.mocked(syncService.pushSync).mockResolvedValue({ status: 'failed' })
     const localDays = { '2026-08-01': [{ checkIn: '2026-08-01T09:00:00Z', checkOut: '2026-08-01T17:00:00Z' }] }
     const { result } = renderHook(() => useSync(baseArgs({ days: localDays })))
 
@@ -303,11 +330,17 @@ describe('useSync', () => {
       await Promise.resolve()
     })
 
-    expect(syncService.pushSync).toHaveBeenCalledWith('token-123', {
-      days: { '2026-08-11': [{ checkIn: '2026-08-11T09:00:00Z', checkOut: null }] },
-      daysOff: {},
-      settings,
-    })
+    expect(syncService.pushSync).toHaveBeenCalledWith(
+      'token-123',
+      {
+        days: { '2026-08-11': [{ checkIn: '2026-08-11T09:00:00Z', checkOut: null }] },
+        daysOff: {},
+        settings,
+      },
+      // Unconditional: this user has never synced, so there is no version to
+      // be conditional on.
+      null
+    )
     addSpy.mockRestore()
   })
   // Every call in syncService swallows its own error and returns null, so
@@ -320,7 +353,7 @@ describe('useSync', () => {
         data: { days: {}, daysOff: {}, settings },
         lastSyncedAt: '2026-08-11T10:00:00Z',
       })
-      vi.mocked(syncService.pushSync).mockResolvedValue(null)
+      vi.mocked(syncService.pushSync).mockResolvedValue({ status: 'failed' })
 
       const { result } = renderHook(() => useSync(baseArgs()))
       await act(async () => {
@@ -338,6 +371,7 @@ describe('useSync', () => {
     })
 
     it('reports a failed initial pull', async () => {
+      // null here means the pull *failed*, which is what this test is about.
       vi.mocked(syncService.getSync).mockResolvedValue(null)
 
       const { result } = renderHook(() => useSync(baseArgs()))
@@ -356,7 +390,14 @@ describe('useSync', () => {
       })
       expect(result.current.syncError).toBe('pull')
 
-      vi.mocked(syncService.pushSync).mockResolvedValue({ lastSyncedAt: '2026-08-11T11:00:00Z' })
+      // Recovery now requires the *read* to work again, not just the write:
+      // syncNow refuses to push while it has never managed to see the server,
+      // because doing so would overwrite data it cannot account for.
+      vi.mocked(syncService.getSync).mockResolvedValue({
+        data: { days: {}, daysOff: {}, settings },
+        lastSyncedAt: '2026-08-11T10:00:00Z',
+      })
+      vi.mocked(syncService.pushSync).mockResolvedValue({ status: 'ok', lastSyncedAt: '2026-08-11T11:00:00Z' })
       await act(async () => {
         await result.current.syncNow(true)
       })
@@ -376,6 +417,128 @@ describe('useSync', () => {
       })
 
       expect(result.current.syncError).toBeNull()
+    })
+  })
+
+  // The whole reason the precondition exists. Before it, a device whose tab had
+  // been open all day would push on its next heartbeat and silently replace
+  // everything another device had written since — for a paid feature whose
+  // entire promise is that your data survives across devices.
+  describe('conflicts', () => {
+    const serverData = {
+      days: { '2026-08-12': [{ checkIn: '2026-08-12T09:00:00Z', checkOut: null }] },
+      daysOff: {},
+      settings,
+    }
+
+    function mockConflict() {
+      vi.mocked(syncService.getSync).mockResolvedValue({
+        data: { days: {}, daysOff: {}, settings },
+        lastSyncedAt: '2026-08-11T10:00:00Z',
+      })
+      vi.mocked(syncService.pushSync).mockResolvedValue({
+        status: 'conflict',
+        server: { data: serverData, lastSyncedAt: '2026-08-12T10:00:00Z' },
+      })
+    }
+
+    it('adopts the server copy rather than overwriting it', async () => {
+      mockConflict()
+      const onRestore = vi.fn()
+
+      const { result } = renderHook(() => useSync(baseArgs({ onRestore })))
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+      await act(async () => {
+        await result.current.syncNow(true)
+      })
+
+      expect(onRestore).toHaveBeenCalledWith(serverData)
+    })
+
+    it('reports the conflict rather than claiming a clean sync', async () => {
+      mockConflict()
+
+      const { result } = renderHook(() => useSync(baseArgs()))
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+      let pushed: boolean | undefined
+      await act(async () => {
+        pushed = await result.current.syncNow(true)
+      })
+
+      expect(pushed).toBe(false)
+      expect(result.current.syncError).toBe('conflict')
+    })
+
+    it('adopts the server version so the next push is conditional on it', async () => {
+      // Staying on the stale version would make every subsequent push conflict
+      // too, leaving the device permanently unable to sync.
+      mockConflict()
+
+      const { result } = renderHook(() => useSync(baseArgs()))
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+      await act(async () => {
+        await result.current.syncNow(true)
+      })
+
+      vi.mocked(syncService.pushSync).mockClear()
+      vi.mocked(syncService.pushSync).mockResolvedValue({ status: 'ok', lastSyncedAt: '2026-08-12T11:00:00Z' })
+      await act(async () => {
+        await result.current.syncNow(true)
+      })
+
+      expect(syncService.pushSync).toHaveBeenCalledWith(
+        'token-123',
+        expect.anything(),
+        '2026-08-12T10:00:00Z'
+      )
+    })
+  })
+
+  // Exactly what a tester hit: sign in, upgrade to Pro, and sync reports
+  // failing even though the request was a 200. The server copy is empty for a
+  // brand-new subscriber, and the response for that case was being discarded —
+  // which then blocked the push too, because syncNow refuses to write while it
+  // has never managed to read the server.
+  describe('first sync after upgrading to Pro', () => {
+    const localDays = { '2026-08-01': [{ checkIn: '2026-08-01T09:00:00Z', checkOut: '2026-08-01T17:00:00Z' }] }
+
+    beforeEach(() => {
+      // The server holds nothing yet: a successful read reporting an empty
+      // account, which is not the same thing as a failed read.
+      vi.mocked(syncService.getSync).mockResolvedValue({
+        data: { days: {}, daysOff: {}, settings },
+        lastSyncedAt: null,
+      })
+    })
+
+    it('uploads the local history rather than reporting a failure', async () => {
+      const { result } = renderHook(() => useSync(baseArgs({ days: localDays })))
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+
+      expect(syncService.pushSync).toHaveBeenCalledWith(
+        'token-123',
+        { days: localDays, daysOff: {}, settings },
+        null
+      )
+      expect(result.current.syncError).toBeNull()
+    })
+
+    it('reports a clean state once the upload lands', async () => {
+      const { result } = renderHook(() => useSync(baseArgs({ days: localDays })))
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0)
+      })
+
+      expect(result.current.syncError).toBeNull()
+      expect(result.current.lastSyncedAt).not.toBeNull()
     })
   })
 })

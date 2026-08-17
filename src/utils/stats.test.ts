@@ -52,6 +52,20 @@ describe('buildWeeklyTotals', () => {
   it('returns an empty array with no logged days', () => {
     expect(buildWeeklyTotals([], {})).toEqual([])
   })
+
+  it("prorates the target against the user's own daily target, not a hardcoded 8h", () => {
+    // The Pro "custom-daily-target" feature was ignored here entirely, so a
+    // user on a 6h day was still graded against a 40h week on the Health page
+    // while the Track tab correctly showed them done at 30h.
+    const perDay = [{ key: '2024-01-08', totalMs: 6 * 3600000 }]
+    expect(buildWeeklyTotals(perDay, {}, 6)[0].target).toBe(30)
+  })
+
+  it('still prorates a custom target for days off', () => {
+    const perDay = [{ key: '2024-01-08', totalMs: 6 * 3600000 }]
+    const weeks = buildWeeklyTotals(perDay, { '2024-01-09': 'personal' }, 6)
+    expect(weeks[0].target).toBe(24) // (5 - 1) * 6
+  })
 })
 
 describe('computeRecentWeeklyAvg', () => {

@@ -7,6 +7,7 @@ import ConfirmDialog from './ConfirmDialog'
 import GoogleSignInButton from './GoogleSignInButton'
 import { DARK_THEME_OPTIONS, LIGHT_THEME_OPTIONS } from '../constants/themeColors'
 import { PRO_FEATURES } from '../constants/proFeatures'
+import NumberField from './NumberField'
 import type { SyncError } from '../hooks/useSync'
 import type { AuthUser, HolidayAccrualMode } from '../types'
 
@@ -15,6 +16,10 @@ import type { AuthUser, HolidayAccrualMode } from '../types'
 const SYNC_ERROR_LABEL: Record<SyncError, string> = {
   push: 'Last sync failed',
   pull: 'Couldn’t check for updates',
+  // Not a failure so much as a resolution: another device had newer data and
+  // this one adopted it. Worth saying out loud, because the alternative — what
+  // used to happen — was silently overwriting that device's work.
+  conflict: 'Updated from another device',
 }
 
 interface SettingsPageProps {
@@ -29,6 +34,13 @@ interface SettingsPageProps {
   isSyncing?: boolean
   /** Set when the last sync attempt failed, so a silent failure isn't shown as a healthy "Last synced …". */
   syncError?: SyncError | null
+  /**
+   * True when the last settings save didn't reach the server. Distinct from
+   * syncError, which is about time-entry data: settings save on every change
+   * and used to fail completely silently, so a Pro user could set a theme or a
+   * daily target, see it apply locally, and find it gone on their next device.
+   */
+  settingsSaveFailed?: boolean
   onSyncNow?: () => void
   showThemes?: boolean
   themeLightColor?: string | null
@@ -72,7 +84,7 @@ interface SettingsPageProps {
   accountUrl?: string
 }
 
-export default function SettingsPage({ allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange, showSync = false, lastSyncedAt = null, isSyncing = false, syncError = null, onSyncNow, showThemes = false, themeLightColor = null, themeDarkColor = null, onThemeLightColorChange, onThemeDarkColorChange, onPreviewTheme, onPreviewThemeEnd, showDailyTarget = false, dailyTargetHours = 8, onDailyTargetHoursChange, showHolidayCarryover = false, holidayCarryoverEnabled = false, onHolidayCarryoverEnabledChange, showBilling = false, cancelAtPeriodEnd = false, currentPeriodEnd = null, subscriptionInterval = null, isCancellingSubscription = false, onCancelSubscription, showAccount = false, user = null, onSignIn, onSignOut, onDeleteAccount, isDeletingAccount = false, deleteAccountError = null, showUpgrade = false, accountUrl }: SettingsPageProps) {
+export default function SettingsPage({ allowance, onAllowanceChange, startDate, onStartDateChange, accrualMode, onAccrualModeChange, showSync = false, lastSyncedAt = null, isSyncing = false, syncError = null, settingsSaveFailed = false, onSyncNow, showThemes = false, themeLightColor = null, themeDarkColor = null, onThemeLightColorChange, onThemeDarkColorChange, onPreviewTheme, onPreviewThemeEnd, showDailyTarget = false, dailyTargetHours = 8, onDailyTargetHoursChange, showHolidayCarryover = false, holidayCarryoverEnabled = false, onHolidayCarryoverEnabledChange, showBilling = false, cancelAtPeriodEnd = false, currentPeriodEnd = null, subscriptionInterval = null, isCancellingSubscription = false, onCancelSubscription, showAccount = false, user = null, onSignIn, onSignOut, onDeleteAccount, isDeletingAccount = false, deleteAccountError = null, showUpgrade = false, accountUrl }: SettingsPageProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const year = useMemo(() => new Date().getFullYear(), [])
@@ -81,6 +93,16 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
 
   return (
     <section className="settings-page">
+      {/* Settings save on every change, and that save used to fail in complete
+          silence — the local copy applied, the server never heard about it, and
+          nothing said so. A Pro user could pick a theme here, watch it take
+          effect, and find it absent on their next device. */}
+      {settingsSaveFailed && (
+        <p className="settings-note settings-note--error" role="alert">
+          Your latest settings change hasn’t reached your account yet — it’s saved on this device,
+          but other devices won’t see it until the next successful save.
+        </p>
+      )}
       {(showAccount || showBilling) && (
         <SettingsSection title="Account" collapsible={false}>
           {showAccount && (
@@ -165,12 +187,11 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
         <label className="settings-field">
           <span className="settings-field-label">Annual allowance</span>
           <span className="settings-field-control">
-            <input
-                type="number"
-                min="0"
+            <NumberField
+                inputMode="numeric"
                 className="settings-field-input"
                 value={allowance}
-                onChange={e => onAllowanceChange(e.target.value)}
+                onCommit={onAllowanceChange}
                 aria-label="Annual holiday allowance"
             />
             <span className="settings-field-suffix">days/yr</span>
@@ -272,7 +293,9 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
             <p className="settings-note settings-note--error" role="alert">
               {syncError === 'push'
                 ? 'Your latest changes are still only on this device. They’ll be sent again automatically — or press the button above to retry now.'
-                : 'We couldn’t reach the server, so changes made on your other devices may be missing here. Press the button above to retry.'}
+                : syncError === 'conflict'
+                  ? 'Another device had newer data, so this device has been brought up to date with it. Any edit you made here that wasn’t saved yet may need redoing.'
+                  : 'We couldn’t reach the server, so changes made on your other devices may be missing here. Press the button above to retry.'}
             </p>
           )}
         </SettingsSection>
@@ -310,13 +333,11 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
           <label className="settings-field">
             <span className="settings-field-label">Hours per day</span>
             <span className="settings-field-control">
-              <input
-                  type="number"
-                  min="0"
-                  step="0.5"
+              <NumberField
+                  inputMode="decimal"
                   className="settings-field-input"
                   value={dailyTargetHours}
-                  onChange={e => onDailyTargetHoursChange?.(e.target.value)}
+                  onCommit={value => onDailyTargetHoursChange?.(value)}
                   aria-label="Daily target hours"
               />
               <span className="settings-field-suffix">hrs/day</span>

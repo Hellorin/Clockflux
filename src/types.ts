@@ -75,7 +75,14 @@ export function isAuthUser(value: unknown): value is AuthUser {
   return (
     typeof candidate.name === 'string' &&
     typeof candidate.email === 'string' &&
-    typeof candidate.picture === 'string' &&
+    // Optional, not required. A Google account with no profile photo has no
+    // picture claim, so the backend sent no picture field — and requiring one
+    // meant those users were handed a perfectly good 200 that this rejected,
+    // leaving them unable to sign in at all. The backend now always sends the
+    // field, but this stays tolerant: a user cached by an older build may not
+    // have it either, and refusing to read your own stored session is worse
+    // than rendering no avatar.
+    (candidate.picture === undefined || typeof candidate.picture === 'string') &&
     (candidate.plan === 'free' || candidate.plan === 'pro')
   )
 }

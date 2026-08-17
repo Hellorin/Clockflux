@@ -3,6 +3,7 @@ import { STORAGE_KEY as TIME_ENTRIES_STORAGE_KEY } from '../repositories/localSt
 import { STORAGE_KEY as SETTINGS_STORAGE_KEY } from '../repositories/localStorageSettingsRepository'
 import type { AuthRepository } from '../repositories/types'
 import { isAuthUser, type AuthUser } from '../types'
+import { apiFetch, type ApiError } from './apiClient'
 
 // Single seam for choosing which store backs the signed-in user. Local
 // storage today; once there's a backend this is where we'd branch to a
@@ -16,11 +17,24 @@ interface AuthResponse {
   accessToken: string
 }
 
+function isAuthResponse(value: unknown): value is AuthResponse {
+  if (!value || typeof value !== 'object') return false
+  const candidate = value as Partial<AuthResponse>
+  return isAuthUser(candidate.user) && typeof candidate.accessToken === 'string'
+}
+
 // Normalizes cancelAtPeriodEnd to a boolean, since it's a newer field the
 // backend always sends but a user cached in localStorage before this field
 // existed won't have.
 function normalizeAuthUser(user: AuthUser): AuthUser {
-  return { ...user, cancelAtPeriodEnd: user.cancelAtPeriodEnd === true }
+  return {
+    ...user,
+    cancelAtPeriodEnd: user.cancelAtPeriodEnd === true,
+    // isAuthUser accepts an absent picture — a Google account with no profile
+    // photo genuinely has none — so give downstream a string rather than
+    // making every consumer null-check a field the type says is required.
+    picture: user.picture ?? '',
+  }
 }
 
 export function loadUser(): AuthUser | null {
@@ -149,7 +163,7 @@ export async function signInWithGoogle(credential: string): Promise<AuthUser | n
 // exactly that race and sign the user out. Sharing one in-flight request
 // across all concurrent callers makes that impossible: there's only ever one
 // redemption in flight, so there's nothing to race.
-let inFlightRefresh: Promise<AuthUser | null> | null = null
+let inFlightRefresh: Promise<RefreshResult> | null = null
 
 /**
  * Exchanges the httpOnly refresh-token cookie (set by signInWithGoogle or a
@@ -165,23 +179,45 @@ let inFlightRefresh: Promise<AuthUser | null> | null = null
  * their own — see inFlightRefresh above.
  */
 export function refreshAccessToken(): Promise<AuthUser | null> {
+  return refreshSession().then(result => (result.ok ? result.user : null))
+}
+
+/**
+ * Why a refresh failed, which callers genuinely need to tell apart.
+ *
+ * refreshAccessToken returns null for every failure, and useAuth's heartbeat
+ * read that as "the refresh token is gone" and signed the user out. But a
+ * network blip, a timeout, or a backend 500 produce exactly the same null — so
+ * one flaky moment on mobile ended a perfectly valid session. Only 'auth'
+ * actually means the session is over.
+ */
+export type RefreshResult =
+  | { ok: true; user: AuthUser }
+  | { ok: false; error: ApiError }
+
+/**
+ * The refresh, reporting why it failed.
+ *
+ * Shares the same single in-flight promise as refreshAccessToken — that is not
+ * an optimization. Refresh tokens are single-use and rotate on redemption, and
+ * the backend treats a second concurrent redemption of the same token as theft,
+ * revoking the entire family and tearing down the session the first redemption
+ * had just renewed.
+ */
+export function refreshSession(): Promise<RefreshResult> {
   if (inFlightRefresh) return inFlightRefresh
 
-  inFlightRefresh = (async () => {
+  inFlightRefresh = (async (): Promise<RefreshResult> => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/auth/refresh`, {
-        method: 'POST',
-        credentials: 'include',
-      })
-      if (!response.ok) return null
-      const { user, accessToken } = (await response.json()) as Partial<AuthResponse>
-      if (!isAuthUser(user) || typeof accessToken !== 'string') return null
-      const normalized = normalizeAuthUser(user)
+      // No refreshToken callback here, for obvious reasons: this *is* the
+      // refresh, and a 401 means the refresh token itself is spent.
+      const result = await apiFetch({ path: '/api/v1/auth/refresh', method: 'POST' }, isAuthResponse)
+      if (!result.ok) return { ok: false, error: result.error }
+
+      const normalized = normalizeAuthUser(result.value.user)
       saveUser(normalized)
-      resolveRepository().saveAccessToken(accessToken)
-      return normalized
-    } catch {
-      return null
+      resolveRepository().saveAccessToken(result.value.accessToken)
+      return { ok: true, user: normalized }
     } finally {
       inFlightRefresh = null
     }

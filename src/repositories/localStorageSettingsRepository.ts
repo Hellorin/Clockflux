@@ -1,3 +1,4 @@
+import { guardedWrite } from '../utils/storageHealth'
 import type { Settings } from '../types'
 import type { SettingsRepository } from './types'
 
@@ -15,6 +16,6 @@ export const localStorageSettingsRepository: SettingsRepository = {
     }
   },
   save(settings: Settings): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+    guardedWrite(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)))
   },
 }

@@ -1,21 +1,20 @@
 import { Analytics } from "@vercel/analytics/react"
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { useTimeTracker } from './hooks/useTimeTracker'
 import { useAppSettings } from './hooks/useAppSettings'
 import { useLandingPage } from './hooks/useLandingPage'
 import { useAuth } from './hooks/useAuth'
 import { useSync } from './hooks/useSync'
+import { useStorageHealth } from './hooks/useStorageHealth'
 import SlideToggle from './components/SlideToggle'
 import LiveTimer from './components/LiveTimer'
 import TodaySummary from './components/TodaySummary'
 import HistoryList from './components/HistoryList'
-import CalendarView from './components/CalendarView'
+
 import DayEditModal from './components/DayEditModal'
 import CelebrationOverlay from './components/CelebrationOverlay'
 import InstallPrompt from './components/InstallPrompt'
-import HealthPage from './components/HealthPage'
-import HolidayPage from './components/HolidayPage'
-import SettingsPage from './components/SettingsPage'
+
 import { formatDateKey, getGreeting } from './utils/time'
 import * as preferencesService from './services/preferencesService'
 import * as authService from './services/authService'
@@ -26,6 +25,16 @@ import { reconcileOwner } from './services/localDataOwnershipService'
 import type { ExportFormat } from './services/exportService'
 import type { Milestone } from './hooks/useTimeTracker'
 import type { HoursFormat, Session } from './types'
+
+// The four views behind a tab, split out of the initial bundle. Everything
+// shipped as one ~300 KB chunk, so the Calendar, Health, Holiday and Settings
+// pages all had to download and parse before the check-in button — the one
+// control most sessions consist of — could paint. Each is fetched the first
+// time its tab is opened.
+const CalendarView = lazy(() => import('./components/CalendarView'))
+const HealthPage = lazy(() => import('./components/HealthPage'))
+const HolidayPage = lazy(() => import('./components/HolidayPage'))
+const SettingsPage = lazy(() => import('./components/SettingsPage'))
 
 type View = 'tracker' | 'calendar' | 'holiday' | 'health' | 'settings'
 
@@ -63,7 +72,7 @@ export default function App() {
   // Settings round-trip through the server-validated /api/v1/settings
   // endpoint whenever signed in (see useAppSettings), which is what actually
   // enforces the Pro-only fields below against the caller's real plan.
-  const { settings, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode, setDailyTargetHours, setHolidayCarryoverEnabled, setThemeLightColor, setThemeDarkColor, replaceSettings } = useAppSettings(accessToken, user?.email)
+  const { settings, settingsSaveFailed, setAnnualHolidayAllowance, setEmploymentStartDate, setHolidayAccrualMode, setDailyTargetHours, setHolidayCarryoverEnabled, setThemeLightColor, setThemeDarkColor, replaceSettings } = useAppSettings(accessToken, user?.email)
   const enabledViews = new Set(features.map(feature => feature.key))
   const syncEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('cloud-sync')
   const themesEnabled = AUTH_ENABLED && PAID_FEATURES_ENABLED && user?.plan === 'pro' && enabledViews.has('themes')
@@ -135,6 +144,7 @@ export default function App() {
       replaceSettings(restored.settings)
     },
   })
+  const storageWriteFailing = useStorageHealth()
   // Gives sign-out a chance to confirm the cloud copy is current before
   // authService risks wiping local Pro data (see authService.signOut's
   // safeToWipe param): if there's anything unsynced, attempt one last
@@ -258,6 +268,7 @@ export default function App() {
     <CelebrationOverlay
       milestone={celebrationMilestone}
       onDismiss={() => setCelebrationMilestone(null)}
+      dailyTargetHours={settings.dailyTargetHours}
     />
     <div className="app" inert={isLandingOpen}>
       <header className="app-header">
@@ -292,6 +303,19 @@ export default function App() {
         )}
       </header>
 
+      {/* The repositories swallow a rejected localStorage write so a full quota
+          or a storage-blocking privacy setting can't crash the app mid-render.
+          Without this banner that fix would trade a crash for something worse:
+          the user keeps checking in and out, sees every session on screen, and
+          loses all of it on reload with no idea anything went wrong. */}
+      {storageWriteFailing && (
+        <p className="app-storage-warning" role="alert">
+          This browser is refusing to save data — your hours are only in this tab and
+          will be lost if you reload. Free up storage space, or turn off private/
+          restricted browsing for this site.
+        </p>
+      )}
+
       <main className="app-main">
         {activeView === 'tracker' && (
           <>
@@ -307,6 +331,11 @@ export default function App() {
             <HistoryList allDays={allDays} todayKey={todayKey} hoursFormat={hoursFormat} daysOff={daysOff} dailyTargetHours={settings.dailyTargetHours} />
           </>
         )}
+        {/* One boundary around all four lazy views: they're mutually exclusive
+            tabs, so only ever one is suspending. The fallback is deliberately
+            empty — the chunk is small and same-origin, so a spinner would
+            usually flash for a frame and read as jank rather than progress. */}
+        <Suspense fallback={null}>
         {activeView === 'calendar' && (
           <CalendarView
             allDays={allDays}
@@ -339,6 +368,7 @@ export default function App() {
             allDays={allDays}
             daysOff={daysOff}
             employmentStartDate={settings.employmentStartDate}
+            dailyTargetHours={settings.dailyTargetHours}
             historyScope={historyScope}
           />
         )}
@@ -365,6 +395,7 @@ export default function App() {
             showDailyTarget={dailyTargetEnabled}
             dailyTargetHours={settings.dailyTargetHours}
             onDailyTargetHoursChange={setDailyTargetHours}
+            settingsSaveFailed={settingsSaveFailed}
             showHolidayCarryover={holidayCarryoverFeatureEnabled}
             holidayCarryoverEnabled={settings.holidayCarryoverEnabled}
             onHolidayCarryoverEnabledChange={setHolidayCarryoverEnabled}
@@ -385,6 +416,7 @@ export default function App() {
             accountUrl={ACCOUNT_URL}
           />
         )}
+        </Suspense>
       </main>
 
       {selectedDay && (

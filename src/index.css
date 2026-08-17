@@ -198,6 +198,45 @@ body {
   color: var(--text-muted);
 }
 
+/* Per-row span in the day editor, and the marker for a session that ends the
+   following morning. Both exist so a mistyped time is visible while typing
+   rather than surfacing later as a day that inexplicably totals 0h. */
+.modal-session-duration {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.modal-session-nextday {
+  margin-right: 0.35rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.25rem;
+  background: color-mix(in srgb, var(--text-muted) 20%, transparent);
+  font-size: 0.7rem;
+}
+
+.modal-validation-error {
+  margin: 0.5rem 0 0;
+  color: var(--accent-out);
+  font-size: 0.85rem;
+}
+
+/* Shown when the browser is rejecting localStorage writes (quota full, or a
+   privacy setting blocking storage). Deliberately loud and full-width rather
+   than a subtle indicator: the user's hours exist only in this tab at that
+   point, and the app is otherwise behaving completely normally. */
+.app-storage-warning {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--accent-out);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--accent-out) 12%, var(--surface));
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
 .app-main {
   display: flex;
   flex-direction: column;

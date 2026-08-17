@@ -1,3 +1,8 @@
+import { apiFetchRaw } from './apiClient'
+
+/** Export generation is server-side and can be slow for a multi-year PDF. */
+const EXPORT_TIMEOUT_MS = 60000
+import { refreshAccessToken, loadAccessToken } from './authService'
 import type { DaysMap, DaysOffMap } from '../types'
 
 export type ExportFormat = 'csv' | 'pdf' | 'ics'
@@ -57,17 +62,26 @@ function filenameFromContentDisposition(header: string | null, fallback: string)
  * Returns null on any failure (offline, backend down, not Pro, etc.).
  */
 export async function requestExport(accessToken: string, params: ExportParams): Promise<ExportFileResult | null> {
+  const result = await apiFetchRaw({
+    path: '/api/v1/export',
+    method: 'POST',
+    body: params,
+    accessToken,
+    refreshToken: async () => {
+      const user = await refreshAccessToken()
+      return user ? loadAccessToken() : null
+    },
+    // Longer than the default: a PDF spanning the full three-year server-side
+    // cap is genuinely slow to render, and cutting it off at 15s would fail a
+    // request that was working.
+    timeoutMs: EXPORT_TIMEOUT_MS,
+  })
+  if (!result.ok) return null
+
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/export`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-      credentials: 'include',
-      body: JSON.stringify(params),
-    })
-    if (!response.ok) return null
-    const blob = await response.blob()
+    const blob = await result.value.blob()
     const filename = filenameFromContentDisposition(
-      response.headers.get('Content-Disposition'),
+      result.value.headers.get('Content-Disposition'),
       `clockflux-export-${params.startDate}-to-${params.endDate}.${params.format}`
     )
     return { filename, blob }
@@ -87,5 +101,8 @@ export function downloadExportFile(result: ExportFileResult): void {
   document.body.appendChild(a)
   a.click()
   a.remove()
-  URL.revokeObjectURL(url)
+  // Revoked on a later tick rather than in the same one as the click. Firefox
+  // and several mobile browsers start the download asynchronously, so tearing
+  // the object URL down immediately can abort it or produce an empty file.
+  setTimeout(() => URL.revokeObjectURL(url), 0)
 }

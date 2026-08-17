@@ -155,13 +155,16 @@ describe('useAppSettings', () => {
       // back to the default (e.g. the caller's real plan doesn't unlock it) —
       // the hook must end up reflecting that, not the optimistic local value.
       vi.mocked(settingsSyncService.putServerSettings).mockResolvedValue({
-        annualHolidayAllowance: 25,
-        employmentStartDate: null,
-        holidayAccrualMode: 'gradual',
-        themeLightColor: null,
-        themeDarkColor: null,
-        dailyTargetHours: 8,
-        holidayCarryoverEnabled: false,
+        ok: true,
+        settings: {
+          annualHolidayAllowance: 25,
+          employmentStartDate: null,
+          holidayAccrualMode: 'gradual',
+          themeLightColor: null,
+          themeDarkColor: null,
+          dailyTargetHours: 8,
+          holidayCarryoverEnabled: false,
+        },
       })
 
       const { result } = renderHook(() => useAppSettings('token-123'))
@@ -182,7 +185,7 @@ describe('useAppSettings', () => {
 
     it('keeps the optimistic local value when the request fails (offline)', async () => {
       vi.mocked(settingsSyncService.getServerSettings).mockResolvedValue(null)
-      vi.mocked(settingsSyncService.putServerSettings).mockResolvedValue(null)
+      vi.mocked(settingsSyncService.putServerSettings).mockResolvedValue({ ok: false, error: 'network' })
 
       const { result } = renderHook(() => useAppSettings('token-123'))
       await act(async () => {

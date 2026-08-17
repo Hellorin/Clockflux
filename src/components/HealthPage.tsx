@@ -13,6 +13,11 @@ interface HealthPageProps {
   allDays: DayEntry[]
   daysOff: DaysOffMap
   employmentStartDate: string | null
+  /** The user's expected work hours per day (Pro "custom-daily-target"). This
+   *  page used to assume 8h/40h throughout, so someone on a 6h target saw the
+   *  Track tab honour it while every number here still graded them against a
+   *  40h week. */
+  dailyTargetHours: number
   /** Whether the stats below are capped to the current year (free plan) or
    *  cover full history (Pro) — null when paid gating isn't active at all. */
   historyScope?: 'limited' | 'unlimited' | null
@@ -46,11 +51,11 @@ const STATUS_CONFIG: Record<RecentWeeklyAvgStatus, { icon: string, message: stri
   },
 }
 
-export default function HealthPage({ stats, allDays, daysOff, employmentStartDate, historyScope = null }: HealthPageProps) {
+export default function HealthPage({ stats, allDays, daysOff, employmentStartDate, dailyTargetHours, historyScope = null }: HealthPageProps) {
   const healthData = useMemo(() => {
     const days = Object.fromEntries(allDays.map(d => [d.date, d.sessions]))
-    return getRecentWeeklyAvg(days, daysOff)
-  }, [allDays, daysOff])
+    return getRecentWeeklyAvg(days, daysOff, undefined, dailyTargetHours)
+  }, [allDays, daysOff, dailyTargetHours])
 
   const lastOvertimeDate = useMemo(() => {
     const series = healthData.cumulativeOvertimeSeries
@@ -183,7 +188,7 @@ export default function HealthPage({ stats, allDays, daysOff, employmentStartDat
         </p>
       )}
 
-      <WeekBreakdown weeks={recentWeeks} />
+      <WeekBreakdown weeks={recentWeeks} dailyTargetHours={dailyTargetHours} />
     </section>
   )
 }
@@ -213,14 +218,18 @@ function formatWeekLabel(monday: Date): string {
   return monday.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-function WeekBreakdown({ weeks }: { weeks: WeeklyTotal[] | undefined }) {
+function WeekBreakdown({ weeks, dailyTargetHours }: { weeks: WeeklyTotal[] | undefined, dailyTargetHours: number }) {
   if (!weeks || weeks.length === 0) return null
   return (
     <div className="week-breakdown">
       <p className="week-breakdown__title">Recent weeks</p>
       <ul className="week-breakdown__list">
         {weeks.map(w => {
-          const daysOff = w.target < 40 ? (40 - w.target) / 8 : 0
+          // Derived from the user's own target rather than a hardcoded 40/8,
+          // which reported the wrong number of days off for anyone not on an
+          // 8-hour day.
+          const fullWeekTarget = dailyTargetHours * 5
+          const daysOff = w.target < fullWeekTarget ? (fullWeekTarget - w.target) / dailyTargetHours : 0
           const ok = w.hours >= w.target
           return (
             <li key={w.mondayKey} className={`week-breakdown__row week-breakdown__row--${ok ? 'ok' : 'warn'}`}>
