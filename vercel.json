@@ -16,5 +16,12 @@
         { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" }
       ]
     }
-  ]
+  ],
+  "env": {
+    "VITE_GOOGLE_CLIENT_ID": "361314181251-huvvg9jhqgurt6ppdne6h5tepusn5gga.apps.googleusercontent.com",
+    "VITE_API_URL":	"https://clockflux-backend.fly.dev",
+    "VITE_ENABLE_AUTH": "false",
+    "VITE_ENABLE_PAID_FEATURES": "false",
+    "VITE_ACCOUNT_URL": "https://account.clockflux.app"
+  }
 }
