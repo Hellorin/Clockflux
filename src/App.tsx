@@ -122,7 +122,12 @@ export default function App() {
   // ahead of useSync/useAppSettings' own sign-in effects (declared below)
   // so any mismatched data gets set aside before anything tries to push it.
   const currentLocalDataRef = useRef({ days, daysOff, settings })
-  currentLocalDataRef.current = { days, daysOff, settings }
+  // Mirrors the latest render's data onto the ref every commit (not during
+  // render itself — writing a ref while rendering is disallowed) so the
+  // reconcile effect below always reads what's currently on screen.
+  useEffect(() => {
+    currentLocalDataRef.current = { days, daysOff, settings }
+  })
   const reconciledOwnerRef = useRef<string | null>(null)
   useEffect(() => {
     if (!user?.email || reconciledOwnerRef.current === user.email) return

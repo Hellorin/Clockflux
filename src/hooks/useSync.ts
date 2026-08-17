@@ -75,18 +75,30 @@ export function useSync({ enabled, days, daysOff, settings, onRestore }: UseSync
   // timers and event handlers, where a captured state value would be stale.
   const serverVersionRef = useRef<string | null | undefined>(undefined)
   const latestDataRef = useRef<SyncData>({ days, daysOff, settings })
-  latestDataRef.current = { days, daysOff, settings }
+  // Render-safe mirror of baselineRef, for the isDirty computation below —
+  // reading a ref during render is disallowed, so the value that render
+  // needs to see lives in state, while the ref remains for imperative reads
+  // from timers/event handlers (see baselineRef's own comment above).
+  const [baseline, setBaselineState] = useState<string | null>(null)
+  // Mirrors the latest render's data onto the ref every commit (not during
+  // render itself — writing a ref while rendering is disallowed). syncNow
+  // and the reconcile effect below read this via the ref, not as a dep, so
+  // they always see the latest values without resetting timers on every edit.
+  useEffect(() => {
+    latestDataRef.current = { days, daysOff, settings }
+  })
 
-  const snapshot = JSON.stringify(latestDataRef.current)
+  const snapshot = JSON.stringify({ days, daysOff, settings })
   const entriesSnapshot = JSON.stringify({ days, daysOff })
   // Before a baseline has ever been established (never synced on this
   // device, or the initial pull hasn't resolved yet), fall back to comparing
   // against "nothing", so genuinely unsynced local data still reads as
   // dirty instead of silently not counting until the first successful sync.
-  const isDirty = (baselineRef.current ?? emptyBaseline(settings)) !== snapshot
+  const isDirty = (baseline ?? emptyBaseline(settings)) !== snapshot
 
   function setBaseline(value: string) {
     baselineRef.current = value
+    setBaselineState(value)
     localStorageSyncRepository.saveLastSyncedSnapshot(value)
   }
 
@@ -165,7 +177,13 @@ export function useSync({ enabled, days, daysOff, settings, onRestore }: UseSync
     if (!accessToken) return
     let cancelled = false
 
-    baselineRef.current = localStorageSyncRepository.loadLastSyncedSnapshot()
+    const loadedBaseline = localStorageSyncRepository.loadLastSyncedSnapshot()
+    baselineRef.current = loadedBaseline
+    // Syncing in an external value (localStorage) read as part of this same
+    // effect, not deriving it from props/state — the "cascading renders"
+    // this rule guards against doesn't apply here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setBaselineState(loadedBaseline)
 
     getSync(accessToken).then(result => {
       if (cancelled) return
