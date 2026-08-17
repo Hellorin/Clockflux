@@ -108,7 +108,7 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
           {showAccount && (
             <div className="settings-field settings-account-row">
               <span className="settings-field-label">
-                {user ? `Signed in as ${user.email}` : 'Not signed in'}
+                {user ? 'Google account' : 'Sync across devices'}
               </span>
               <GoogleSignInButton user={user} onSignIn={onSignIn ?? (() => {})} onSignOut={onSignOut ?? (() => {})} />
             </div>

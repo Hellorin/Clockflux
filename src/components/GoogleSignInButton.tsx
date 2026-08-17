@@ -81,23 +81,52 @@ export default function GoogleSignInButton({ user, onSignIn, onSignOut }: Google
         // query string breaks that match).
         login_uri: `${import.meta.env.VITE_API_URL}/api/v1/auth/google/callback`,
       })
-      accountsId.renderButton(container, { type: 'icon', theme: 'outline', size: 'medium', shape: 'circle' })
+      // Google's own "standard" pill is the officially designed button —
+      // logo, wordmark and hover/focus states all handled by Google — so it
+      // reads as a real, recognizable sign-in affordance instead of the bare
+      // unlabeled circle this used to be.
+      accountsId.renderButton(container, {
+        type: 'standard',
+        theme: 'outline',
+        size: 'large',
+        shape: 'pill',
+        text: 'signin_with',
+        logo_alignment: 'left',
+      })
     })
   }, [user, clientId, onSignIn])
 
   if (!clientId) return null
 
   if (user) {
+    const initial = (user.name || user.email).trim().charAt(0).toUpperCase()
     return (
-      <button
-        type="button"
-        className="app-auth-signout"
-        onClick={onSignOut}
-        aria-label={`Signed in as ${user.email} — sign out`}
-        title={`Signed in as ${user.email} — click to sign out`}
-      >
-        <span aria-hidden="true">🚪</span> Sign out
-      </button>
+      <div className="app-auth-chip">
+        <span className="app-auth-avatar" aria-hidden="true">
+          {user.picture ? <img src={user.picture} alt="" referrerPolicy="no-referrer" /> : initial}
+        </span>
+        <span className="app-auth-email" title={user.email}>
+          {user.email}
+        </span>
+        <button
+          type="button"
+          className="app-auth-signout"
+          onClick={onSignOut}
+          aria-label={`Sign out of ${user.email}`}
+          title="Sign out"
+        >
+          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+            <path
+              d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
     )
   }
 
