@@ -18,6 +18,21 @@ describe('SettingsSection', () => {
     expect(screen.queryByText('Section content')).not.toBeInTheDocument()
   })
 
+  it('shows the summary only while collapsed', () => {
+    render(
+      <SettingsSection title="Theme" summary="Pick your own colors.">
+        <p>Section content</p>
+      </SettingsSection>
+    )
+    expect(screen.getByText('Pick your own colors.')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('Theme'))
+    expect(screen.queryByText('Pick your own colors.')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('Theme'))
+    expect(screen.getByText('Pick your own colors.')).toBeInTheDocument()
+  })
+
   it('starts expanded when defaultOpen is true', () => {
     render(
       <SettingsSection title="Holiday" defaultOpen>

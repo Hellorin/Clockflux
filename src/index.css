@@ -1771,11 +1771,25 @@ input[type="time"]:focus {
   padding-bottom: 0.4rem;
 }
 
+.settings-section__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
 .settings-section__title {
   font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--text);
+}
+
+.settings-section__summary {
+  font-size: 0.72rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--text-muted);
 }
 
 .settings-section__chevron {

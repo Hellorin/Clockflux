@@ -108,7 +108,7 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
           {showAccount && (
             <div className="settings-field settings-account-row">
               <span className="settings-field-label">
-                {user ? 'Google account' : 'Sync across devices'}
+                {user ? 'Google account' : <><span className="settings-sync-star" aria-hidden="true">✦</span> Sync across devices</>}
               </span>
               <GoogleSignInButton user={user} onSignIn={onSignIn ?? (() => {})} onSignOut={onSignOut ?? (() => {})} />
             </div>
@@ -162,7 +162,7 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
         </SettingsSection>
       )}
 
-      <SettingsSection title="Holiday">
+      <SettingsSection title="Holiday" summary="Your annual allowance, start date, and how days accrue over the year.">
         <div className="settings-field">
           <span className="settings-field-label">Accrual</span>
           <div className="settings-mode-toggle" role="radiogroup" aria-label="Holiday accrual mode">
@@ -302,7 +302,10 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
       )}
 
       {showThemes && (
-        <SettingsSection title={<><span className="settings-sync-star" aria-hidden="true">✦</span> Theme</>}>
+        <SettingsSection
+          title={<><span className="settings-sync-star" aria-hidden="true">✦</span> Theme</>}
+          summary={`Pro feature — ${PRO_FEATURES.find(f => f.key === 'themes')!.description}`}
+        >
           <div className="settings-field">
             <span className="settings-field-label">Light color</span>
             <ThemeColorDropdown
@@ -329,7 +332,10 @@ export default function SettingsPage({ allowance, onAllowanceChange, startDate, 
       )}
 
       {showDailyTarget && (
-        <SettingsSection title={<><span className="settings-sync-star" aria-hidden="true">✦</span> Daily target</>}>
+        <SettingsSection
+          title={<><span className="settings-sync-star" aria-hidden="true">✦</span> Daily target</>}
+          summary={`Pro feature — ${PRO_FEATURES.find(f => f.key === 'custom-daily-target')!.description}`}
+        >
           <label className="settings-field">
             <span className="settings-field-label">Hours per day</span>
             <span className="settings-field-control">
